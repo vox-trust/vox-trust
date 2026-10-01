@@ -4,7 +4,7 @@
 
 Vox Trust is a young, single-maintainer project.
 
-- **Maintainer:** Roger Oliveira ([@rogeroliveira84](https://github.com/rogeroliveira84)).
+- **Maintainer:** Roger Oliveira ([@rogeroliveira84](https://github.com/rogeroliveira84) · [LinkedIn](https://www.linkedin.com/in/rogeroliveira/)).
 - **Decisions:** the maintainer decides, in the open. Changes to the specification happen through pull requests that explain the reasoning, and substantial ones are opened as issues first.
 - **Stability:** the specification is a **draft (0.0)**. Anything can change. No version is stable until it says so in the document itself.
 

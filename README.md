@@ -79,3 +79,4 @@ Currently the workspace contains only `vox-trust-core`: the seal layout and the 
 - Code: [Apache-2.0](LICENSE). Specification text: CC BY 4.0, see [spec/LICENSE.md](spec/LICENSE.md).
 - Governance and name usage: [GOVERNANCE.md](GOVERNANCE.md), [TRADEMARKS.md](TRADEMARKS.md).
 - To cite this work: [CITATION.cff](CITATION.cff).
+- Maintainer: [Roger Oliveira](https://www.linkedin.com/in/rogeroliveira/) · [@rogeroliveira84](https://github.com/rogeroliveira84).
