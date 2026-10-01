@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-01
+
 Hardening after an adversarial review of v0.1.0. Not audited by anyone else.
 
 ### Changed (breaking for library users)

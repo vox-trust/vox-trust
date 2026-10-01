@@ -308,7 +308,7 @@ checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
 
 [[package]]
 name = "vox-trust-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "getrandom",
  "vox-trust-core",
@@ -316,7 +316,7 @@ dependencies = [
 
 [[package]]
 name = "vox-trust-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ed25519-dalek",
  "hmac",
@@ -326,7 +326,7 @@ dependencies = [
 
 [[package]]
 name = "vox-trust-wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "vox-trust-core",
 ]
