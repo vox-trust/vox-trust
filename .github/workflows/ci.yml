@@ -13,7 +13,7 @@ jobs:
     name: Rust (fmt, clippy, tests, vectors)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -28,7 +28,7 @@ jobs:
     name: Minimum supported Rust (1.94)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.94
       - run: cargo test --workspace --locked
 
@@ -36,7 +36,7 @@ jobs:
     name: Dependency advisories
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install --locked cargo-audit
       - run: cargo audit
@@ -45,7 +45,7 @@ jobs:
     name: Independent vector check and WebAssembly
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
@@ -68,7 +68,7 @@ jobs:
     name: Demo in a real browser
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
