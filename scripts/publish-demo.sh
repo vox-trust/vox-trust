@@ -16,7 +16,7 @@ cp web/index.html web/demo.css web/demo.js web/vox-trust.js web/vox_trust.wasm "
 {
   echo "source:  https://github.com/vox-trust/vox-trust"
   echo "commit:  $(git rev-parse HEAD)"
-  echo "rustc:   $(rustc --version)"
+  echo "rustc:   $(rustc +"$(cat scripts/WASM_TOOLCHAIN)" --version)"
   echo "sha256:  $(sha256sum web/vox_trust.wasm | cut -d' ' -f1)  vox_trust.wasm"
 } > "$site/demo/BUILD-INFO.txt"
 echo "copied the demo to $site/demo"

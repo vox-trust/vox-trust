@@ -22,7 +22,7 @@ What is done:
 - ✅ Website in the same five languages with SEO metadata
 - ✅ CI: format, clippy, tests, docs, minimum supported Rust (1.94), dependency advisories, vectors, WebAssembly, real-browser demo, fuzzing
 - ✅ Two internal adversarial review rounds, with fixes and regression tests
-- 🟡 Release: v0.2.0 is on `main`; the Git tag and GitHub Release still have to be created (the tag push is blocked in the authoring environment)
+- ✅ Release v0.2.0 published with binaries for Linux, macOS and Windows, the WebAssembly module and the demo, `SHA256SUMS` and build-provenance attestations; the WebAssembly module is reproducible byte for byte with the pinned toolchain
 - ⬜ Translations reviewed by native speakers (English is the normative text)
 
 ## Principles
@@ -74,13 +74,13 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 ## Phase 3: public release
 
-- 🟡 A release with a working demo and the open threat model: **code on `main` as v0.2.0**; tag and GitHub Release pending; no benchmark results (there is no carrier to measure)
+- 🟡 A release with a working demo and the open threat model: **v0.2.0 released**; no benchmark results (there is no carrier to measure)
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
 - 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
 - ⬜ Private vulnerability reporting enabled in the repository settings and tested end to end (SECURITY.md already points to it, with a fallback)
 - ✅ Fuzzing of every parser of untrusted input: five cargo-fuzz targets that check invariants, not only crashes. Before v0.2.0 they ran about 170 million inputs locally with no failure; CI runs them on every push and for 15 minutes each weekly. Fuzzing finds bugs, it does not prove their absence.
 - ✅ Every GitHub Action pinned by commit hash
-- 🟡 Release workflow: binaries for Linux, macOS and Windows, the WebAssembly module and the demo, with `SHA256SUMS` and build-provenance attestations. Tags are created by GitHub, not GPG-signed; the attestations are the integrity check.
+- ✅ Release workflow: binaries for Linux, macOS and Windows, the WebAssembly module and the demo, with `SHA256SUMS` and build-provenance attestations. Tags are created by GitHub, not GPG-signed; the attestations are the integrity check.
 
 **Exit:** the first outside bug reports and reviews are triaged in public.
 

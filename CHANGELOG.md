@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+- The WebAssembly build pins its Rust toolchain in `scripts/WASM_TOOLCHAIN` (1.99.0). With it, a local build of the v0.2.0 commit reproduces the published `vox_trust-v0.2.0.wasm` byte for byte (SHA-256 `15660a0b…751c8`); with a different toolchain the bytes differ.
+- README: prebuilt binaries on the releases page.
+
 ## [0.2.0] - 2026-10-01
 
 Second hardening round, five languages and a simpler, better-indexed demo.

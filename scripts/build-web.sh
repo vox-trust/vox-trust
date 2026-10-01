@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Builds the WebAssembly core and copies it next to the demo sources in web/.
-# The build is meant to be reproducible: dependencies are locked (--locked) and local paths
-# are remapped so they do not leak into the binary. For identical bytes, use the same Rust
-# toolchain (`rustc -V`) and the same wasm32 target.
+# The build is reproducible: dependencies are locked (--locked), local paths are remapped so
+# they do not leak into the binary, and the Rust toolchain is pinned in scripts/WASM_TOOLCHAIN
+# (change it deliberately, in its own commit). Same toolchain + same commit = same bytes as
+# the published release. Override with VT_WASM_TOOLCHAIN only for experiments.
 # Usage: scripts/build-web.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -16,8 +17,10 @@ if [ "${cargo_home}" != "$HOME/.cargo" ]; then
 fi
 export RUSTFLAGS="${RUSTFLAGS:-} ${remap}"
 
-rustup target add wasm32-unknown-unknown >/dev/null 2>&1 || true
-cargo build --locked -p vox-trust-wasm --release --target wasm32-unknown-unknown
+toolchain="${VT_WASM_TOOLCHAIN:-$(cat scripts/WASM_TOOLCHAIN)}"
+rustup toolchain install "${toolchain}" --profile minimal --target wasm32-unknown-unknown >/dev/null
+cargo +"${toolchain}" build --locked -p vox-trust-wasm --release --target wasm32-unknown-unknown
 cp target/wasm32-unknown-unknown/release/vox_trust_wasm.wasm web/vox_trust.wasm
+echo "toolchain: $(rustc +"${toolchain}" --version)"
 echo "web/vox_trust.wasm: $(wc -c < web/vox_trust.wasm) bytes"
 echo "sha256: $(sha256sum web/vox_trust.wasm 2>/dev/null | cut -d' ' -f1 || shasum -a 256 web/vox_trust.wasm | cut -d' ' -f1)"

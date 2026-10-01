@@ -55,7 +55,7 @@ Dois modos: **círculo** (pessoas que se conhecem, segredo compartilhado) e **p�
 
 **No navegador** (nada é enviado; o núcleo em Rust roda como WebAssembly): abra a [demo](https://vox-trust.github.io/demo/?lang=pt-BR), clique em *Selar* e depois tente trapacear com os botões e veja o verificador pegar cada tentativa.
 
-**Na linha de comando:**
+**Na linha de comando** (binários prontos para Linux, macOS e Windows, com checksums e atestados de build, estão na [página de releases](https://github.com/vox-trust/vox-trust/releases/latest); ou compile do código-fonte):
 
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.2.0 vox-trust-cli

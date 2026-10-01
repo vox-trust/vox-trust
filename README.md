@@ -53,7 +53,7 @@ Two modes: **circle** (people who know each other, shared secret) and **public**
 
 **In the browser** (nothing is uploaded; the Rust core runs as WebAssembly): open the [demo](https://vox-trust.github.io/demo/), press *Seal*, then try to cheat with the buttons and watch the verifier catch each attempt.
 
-**On the command line:**
+**On the command line** (prebuilt binaries for Linux, macOS and Windows, with checksums and build attestations, are on the [releases page](https://github.com/vox-trust/vox-trust/releases/latest); or build from source):
 
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.2.0 vox-trust-cli

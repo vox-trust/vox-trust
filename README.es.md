@@ -55,7 +55,7 @@ Dos modos: **círculo** (personas que se conocen, secreto compartido) y **públi
 
 **En el navegador** (no se sube nada; el núcleo en Rust se ejecuta como WebAssembly): abre la [demo](https://vox-trust.github.io/demo/?lang=es), pulsa *Sellar*, luego intenta hacer trampa con los botones y observa cómo el verificador detecta cada intento.
 
-**En la línea de comandos:**
+**En la línea de comandos** (hay binarios listos para Linux, macOS y Windows, con sumas de verificación y atestaciones de compilación, en la [página de versiones](https://github.com/vox-trust/vox-trust/releases/latest); o compila desde el código fuente):
 
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.2.0 vox-trust-cli

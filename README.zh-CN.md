@@ -55,7 +55,7 @@
 
 **在浏览器中**（不会上传任何内容；Rust 核心以 WebAssembly 方式运行）：打开[演示](https://vox-trust.github.io/demo/?lang=zh-Hans)，点击*签章*，然后用各个按钮尝试作弊，看验证器如何识破每一次企图。
 
-**在命令行中：**
+**在命令行中**（Linux、macOS 和 Windows 的预编译程序及校验和与构建证明见[发布页面](https://github.com/vox-trust/vox-trust/releases/latest)；也可以从源码构建）：
 
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.2.0 vox-trust-cli
