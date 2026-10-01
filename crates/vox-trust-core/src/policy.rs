@@ -1,7 +1,10 @@
 //! The trust-policy decision table (draft spec, section 7).
 
+use core::fmt;
+
 /// What the verifier found in a piece of audio.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SealCheck {
     /// A seal was found and it verifies under a key the verifier trusts.
     Valid,
@@ -24,6 +27,7 @@ pub struct ContactState {
 
 /// The outcome shown to the user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Verdict {
     /// A valid seal from a trusted key.
     Verified,
@@ -36,7 +40,41 @@ pub enum Verdict {
     Alert,
 }
 
+impl SealCheck {
+    /// Stable lower-case name, used in JSON reports and by the command-line tool.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SealCheck::Valid => "valid",
+            SealCheck::Invalid => "invalid",
+            SealCheck::UnknownKey => "unknown_key",
+            SealCheck::Absent => "absent",
+        }
+    }
+}
+
+impl fmt::Display for SealCheck {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl fmt::Display for Verdict {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 impl Verdict {
+    /// Stable lower-case name, used in JSON output and by the command-line tool.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Verdict::Verified => "verified",
+            Verdict::Unsealed => "unsealed",
+            Verdict::Warning => "warning",
+            Verdict::Alert => "alert",
+        }
+    }
+
     /// A stable numeric code, used by the WebAssembly interface.
     pub fn code(self) -> u32 {
         match self {
@@ -122,6 +160,28 @@ mod tests {
         );
         assert_eq!(decide(SealCheck::UnknownKey, Some(PINNED)), Verdict::Alert);
         assert_eq!(decide(SealCheck::UnknownKey, Some(STRICT)), Verdict::Alert);
+    }
+
+    #[test]
+    fn names_are_stable_and_display_matches() {
+        for (check, name) in [
+            (SealCheck::Valid, "valid"),
+            (SealCheck::Invalid, "invalid"),
+            (SealCheck::UnknownKey, "unknown_key"),
+            (SealCheck::Absent, "absent"),
+        ] {
+            assert_eq!(check.as_str(), name);
+            assert_eq!(check.to_string(), name);
+        }
+        for (verdict, name) in [
+            (Verdict::Verified, "verified"),
+            (Verdict::Unsealed, "unsealed"),
+            (Verdict::Warning, "warning"),
+            (Verdict::Alert, "alert"),
+        ] {
+            assert_eq!(verdict.as_str(), name);
+            assert_eq!(verdict.to_string(), name);
+        }
     }
 
     #[test]

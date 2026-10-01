@@ -10,6 +10,11 @@
 //! zero-width characters, line and paragraph separators), and percent-encoded
 //! (everything except `A-Z a-z 0-9 - . _ ~` is written as `%XX`).
 //!
+//! **No Unicode normalization is performed.** Labels are compared and stored byte for byte,
+//! so two labels that look identical (precomposed `é` versus `e` + combining accent, or
+//! look-alike letters from other scripts) can be different pairings. A label is a hint for
+//! humans, never an identity: rely on the key, and compare key identifiers when it matters.
+//!
 //! Every value has exactly one text form: keys are lowercase hexadecimal, `%XX` uses
 //! uppercase hexadecimal, and unreserved characters are never escaped. Anything else is
 //! rejected, so two different texts never mean the same pairing.
@@ -19,6 +24,7 @@
 
 use core::fmt;
 
+use crate::crypto;
 use crate::to_hex;
 
 const PREFIX: &str = "voxtrust:0:";
@@ -26,7 +32,10 @@ const PREFIX: &str = "voxtrust:0:";
 pub const MAX_LABEL_BYTES: usize = 64;
 
 /// A parsed pairing text.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// `Debug` never prints the secret of a circle pairing, and `==` compares circle keys in
+/// constant time.
+#[derive(Clone)]
 pub enum Pairing {
     /// A shared secret for circle mode.
     Circle {
@@ -44,8 +53,49 @@ pub enum Pairing {
     },
 }
 
+impl fmt::Debug for Pairing {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Pairing::Circle { label, .. } => f
+                .debug_struct("Circle")
+                .field("key", &"[REDACTED]")
+                .field("label", label)
+                .finish(),
+            Pairing::Public { public_key, label } => f
+                .debug_struct("Public")
+                .field("public_key", &to_hex(public_key))
+                .field("label", label)
+                .finish(),
+        }
+    }
+}
+
+impl PartialEq for Pairing {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Pairing::Circle { key: a, label: la }, Pairing::Circle { key: b, label: lb }) => {
+                crypto::ct_eq32(a, b) & (la == lb)
+            }
+            (
+                Pairing::Public {
+                    public_key: a,
+                    label: la,
+                },
+                Pairing::Public {
+                    public_key: b,
+                    label: lb,
+                },
+            ) => a == b && la == lb,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for Pairing {}
+
 /// Why a pairing text was rejected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PairingError {
     /// Does not start with `voxtrust:0:`.
     BadPrefix,
@@ -72,12 +122,20 @@ impl fmt::Display for PairingError {
 impl std::error::Error for PairingError {}
 
 /// Characters of Unicode categories Cc, Cf, Zl and Zp, which can hide or reorder text.
+///
+/// Cc is `char::is_control`; Zl and Zp are U+2028 and U+2029; Cf is the explicit list below
+/// (the standard library has no category lookup), as of Unicode 16.
 fn is_forbidden_char(c: char) -> bool {
     c.is_control()
         || matches!(
             c,
             '\u{00AD}'
+                | '\u{0600}'..='\u{0605}'
                 | '\u{061C}'
+                | '\u{06DD}'
+                | '\u{070F}'
+                | '\u{0890}'..='\u{0891}'
+                | '\u{08E2}'
                 | '\u{180E}'
                 | '\u{200B}'..='\u{200F}'
                 | '\u{2028}'..='\u{2029}'
@@ -85,6 +143,14 @@ fn is_forbidden_char(c: char) -> bool {
                 | '\u{2060}'..='\u{2064}'
                 | '\u{2066}'..='\u{206F}'
                 | '\u{FEFF}'
+                | '\u{FFF9}'..='\u{FFFB}'
+                | '\u{110BD}'
+                | '\u{110CD}'
+                | '\u{13430}'..='\u{1343F}'
+                | '\u{1BCA0}'..='\u{1BCA3}'
+                | '\u{1D173}'..='\u{1D17A}'
+                | '\u{E0001}'
+                | '\u{E0020}'..='\u{E007F}'
         )
 }
 
@@ -323,9 +389,41 @@ mod tests {
     fn rejects_invisible_and_formatting_characters() {
         let key = "ab".repeat(32);
         for c in [
-            '\u{200B}', '\u{200E}', '\u{202E}', '\u{2028}', '\u{2029}', '\u{2060}', '\u{2066}',
-            '\u{2069}', '\u{206F}', '\u{FEFF}', '\u{00AD}', '\u{061C}', '\u{180E}', '\u{0085}',
+            '\u{200B}',
+            '\u{200E}',
+            '\u{202E}',
+            '\u{2028}',
+            '\u{2029}',
+            '\u{2060}',
+            '\u{2066}',
+            '\u{2069}',
+            '\u{206F}',
+            '\u{FEFF}',
+            '\u{00AD}',
+            '\u{061C}',
+            '\u{180E}',
+            '\u{0085}',
             '\u{007F}',
+            '\u{0600}',
+            '\u{0605}',
+            '\u{06DD}',
+            '\u{070F}',
+            '\u{0890}',
+            '\u{0891}',
+            '\u{08E2}',
+            '\u{110BD}',
+            '\u{110CD}',
+            '\u{13430}',
+            '\u{1343F}',
+            '\u{1BCA0}',
+            '\u{1BCA3}',
+            '\u{1D173}',
+            '\u{1D17A}',
+            '\u{FFF9}',
+            '\u{FFFB}',
+            '\u{E0001}',
+            '\u{E0020}',
+            '\u{E007F}',
         ] {
             let label = format!("a{c}b");
             let pairing = Pairing::Circle {
@@ -342,6 +440,90 @@ mod tests {
             label: Some("Zoë 日本 \u{200D}".replace('\u{200D}', "")),
         };
         assert_eq!(Pairing::decode(&ok.encode().unwrap()).unwrap(), ok);
+    }
+
+    #[test]
+    fn neighbours_of_the_forbidden_ranges_are_allowed() {
+        // Letters and marks next to Cf code points must not be caught by an off-by-one.
+        for c in [
+            '\u{05FF}',
+            '\u{0606}',
+            '\u{06DC}',
+            '\u{06DE}',
+            '\u{070E}',
+            '\u{0710}',
+            '\u{FFF8}',
+            '\u{FFFC}',
+            '\u{E0000}',
+            '\u{E0080}',
+        ] {
+            assert!(validate_label(&format!("a{c}b")).is_ok(), "{c:?}");
+        }
+    }
+
+    #[test]
+    fn labels_are_not_normalized() {
+        // Precomposed and decomposed e-acute look identical but are different labels.
+        let composed = Pairing::Public {
+            public_key: KEY,
+            label: Some("caf\u{E9}".into()),
+        };
+        let decomposed = Pairing::Public {
+            public_key: KEY,
+            label: Some("cafe\u{301}".into()),
+        };
+        assert_ne!(composed, decomposed);
+        assert_ne!(composed.encode().unwrap(), decomposed.encode().unwrap());
+        assert_eq!(
+            Pairing::decode(&decomposed.encode().unwrap()).unwrap(),
+            decomposed
+        );
+    }
+
+    #[test]
+    fn debug_never_prints_the_circle_secret() {
+        let circle = Pairing::Circle {
+            key: [0xAB; 32],
+            label: Some("home".into()),
+        };
+        let shown = format!("{circle:?}");
+        assert!(
+            shown.contains("[REDACTED]") && shown.contains("home"),
+            "{shown}"
+        );
+        assert!(!shown.contains("abab") && !shown.contains("171"), "{shown}");
+    }
+
+    #[test]
+    fn equality_compares_key_label_and_mode() {
+        let a = Pairing::Circle {
+            key: KEY,
+            label: None,
+        };
+        assert_eq!(a, a.clone());
+        let mut other = KEY;
+        other[31] ^= 1;
+        assert_ne!(
+            a,
+            Pairing::Circle {
+                key: other,
+                label: None
+            }
+        );
+        assert_ne!(
+            a,
+            Pairing::Circle {
+                key: KEY,
+                label: Some("x".into())
+            }
+        );
+        assert_ne!(
+            a,
+            Pairing::Public {
+                public_key: KEY,
+                label: None
+            }
+        );
     }
 
     #[test]

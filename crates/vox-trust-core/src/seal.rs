@@ -13,6 +13,7 @@ const PAD_BITS: u32 = 2;
 
 /// How a seal is authenticated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Mode {
     /// Signer and verifier share a secret.
     Circle,
@@ -21,6 +22,14 @@ pub enum Mode {
 }
 
 impl Mode {
+    /// Stable lower-case name (`"circle"` or `"public"`), used in JSON reports.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Mode::Circle => "circle",
+            Mode::Public => "public",
+        }
+    }
+
     pub(crate) fn bits(self) -> u8 {
         match self {
             Mode::Circle => 0,
@@ -56,6 +65,7 @@ pub struct Seal {
 
 /// Why a byte string could not be decoded as a seal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DecodeError {
     /// The input was not exactly [`SEAL_BYTES`] bytes.
     Length(usize),
@@ -67,9 +77,16 @@ pub enum DecodeError {
 
 /// Why a seal could not be encoded.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum EncodeError {
     /// The version does not fit in 4 bits.
     VersionOutOfRange(u8),
+}
+
+impl fmt::Display for Mode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
 }
 
 impl fmt::Display for DecodeError {

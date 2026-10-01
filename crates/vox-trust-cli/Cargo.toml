@@ -15,4 +15,5 @@ path = "src/main.rs"
 
 [dependencies]
 getrandom = "0.4.3"
+zeroize = "1"
 vox-trust-core = { path = "../vox-trust-core" }

@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-01
+
+Second hardening round, five languages and a simpler, better-indexed demo.
+
+### Added
+- **Languages:** the demo and the website in English, Português (Brasil), Español, 中文(简体) and العربية (right-to-left), with a language selector; READMEs and security/contributing summaries in the same languages (English stays normative).
+- Negative test vectors (10 malformed or tampered files with expected results), re-implemented in the Python cross-check.
+- `Display`/`as_str` on `SealCheck`, `Verdict`, `Mode`; `Display` on `Reason`.
+- Demo: SEO metadata, no-JavaScript note, visible error when WebAssembly fails to load, plural-aware translations.
+
+### Changed (breaking for library users)
+- `#[non_exhaustive]` on the public enums and on `Report`; `Pairing`, `Signer` and `Trust` print `[REDACTED]` for keys in `Debug`, and `Pairing` compares keys in constant time; `#![deny(missing_docs)]`.
+- Pairing labels now reject every Unicode format character (invisible/tag characters); text normalization is documented as not performed.
+- Demo: removed the decorative verdict icon, step badges and waveform canvas.
+
+### Fixed
+- CLI no longer says "signed by public key" for a signature that did not verify; no panic when stdout is closed; `seal` cannot replace a file created in a race.
+- Demo: file names are always bidi-isolated and stripped of control/format characters; attacks only use the demo's own sealed audio; stronger input-border contrast.
+- Secrets in CLI buffers and signing keys are zeroized.
+
 ## [0.1.1] - 2026-10-01
 
 Hardening after an adversarial review of v0.1.0. Not audited by anyone else.

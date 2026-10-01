@@ -9,7 +9,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use serde_json::Value;
-use vox_trust_core::file::{self, Reason, Trust};
+use vox_trust_core::file::{self, FileError, Reason, Trust};
+use vox_trust_core::wav::WavError;
 use vox_trust_core::{Seal, SealCheck};
 
 fn vectors_path(name: &str) -> PathBuf {
@@ -108,5 +109,92 @@ fn published_file_vectors_verify_and_localise_tampering() {
         let sealed = unhex(public["sealed_wav"].as_str().unwrap());
         let report = file::verify_wav(&sealed, trust).unwrap();
         assert_eq!(report.check, SealCheck::Valid, "{name}");
+    }
+}
+
+fn check_from_name(name: &str) -> SealCheck {
+    [
+        SealCheck::Valid,
+        SealCheck::Invalid,
+        SealCheck::UnknownKey,
+        SealCheck::Absent,
+    ]
+    .into_iter()
+    .find(|c| c.as_str() == name)
+    .unwrap_or_else(|| panic!("unknown check name {name}"))
+}
+
+fn reason_from_name(name: &str) -> Reason {
+    [
+        Reason::None,
+        Reason::NoManifest,
+        Reason::Malformed,
+        Reason::UnsupportedVersion,
+        Reason::BadAuthenticator,
+        Reason::BadSignature,
+        Reason::UntrustedKey,
+        Reason::FormatChanged,
+        Reason::Modified,
+    ]
+    .into_iter()
+    .find(|r| r.as_str() == name)
+    .unwrap_or_else(|| panic!("unknown reason name {name}"))
+}
+
+#[test]
+fn negative_vectors_report_exactly_what_is_published() {
+    let file = read("file-v0.json");
+    let negatives = file["negative"].as_array().unwrap();
+    assert!(negatives.len() >= 8, "the negative vectors went missing");
+    for v in negatives {
+        let name = v["name"].as_str().unwrap();
+        let wav = unhex(v["wav"].as_str().unwrap());
+        let t = &v["trust"];
+        let circle_key = t["circle_key"].as_str().map(key32);
+        let pinned = t["pinned_public"].as_str().map(key32);
+        let trust = Trust {
+            circle: circle_key
+                .as_ref()
+                .map(|k| (t["circle_key_id"].as_u64().unwrap() as u32, k)),
+            pinned_public: pinned.as_ref(),
+        };
+        let expected = &v["expected"];
+        let result = file::verify_wav(&wav, trust);
+        if let Some(error) = expected["error"].as_str() {
+            let want = match error {
+                "trailing_bytes" => FileError::Wav(WavError::TrailingBytes),
+                other => panic!("{name}: unknown error name {other}"),
+            };
+            assert_eq!(result.err(), Some(want), "{name}");
+            continue;
+        }
+        let report = result.unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert_eq!(
+            report.check,
+            check_from_name(expected["check"].as_str().unwrap()),
+            "{name}"
+        );
+        assert_eq!(
+            report.reason,
+            reason_from_name(expected["reason"].as_str().unwrap()),
+            "{name}"
+        );
+        assert_ne!(
+            report.check,
+            SealCheck::Valid,
+            "{name}: a negative vector verified"
+        );
+        let modified: Vec<u32> = expected["modified_chunks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|n| n.as_u64().unwrap() as u32)
+            .collect();
+        assert_eq!(report.modified_chunks, modified, "{name}");
+        assert_eq!(
+            report.content_matches,
+            expected["content_matches"].as_bool().unwrap(),
+            "{name}"
+        );
     }
 }

@@ -23,6 +23,8 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Test
         run: cargo test --workspace --locked
+      - name: Docs
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --locked
 
   msrv:
     name: Minimum supported Rust (1.94)
@@ -62,7 +64,7 @@ jobs:
       - name: Build the WebAssembly core
         run: scripts/build-web.sh
       - name: WebAssembly end-to-end tests (Node)
-        run: node --test tests/node/wasm.test.mjs
+        run: node --test tests/node/*.mjs
 
   browser:
     name: Demo in a real browser

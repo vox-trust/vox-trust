@@ -1,3 +1,7 @@
+<p align="center">
+  🌐 <strong>English</strong> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ar.md">العربية</a>
+</p>
+
 <h1 align="center">Vox Trust</h1>
 
 <p align="center"><strong>Don't detect fake voices. Prove real ones.</strong></p>
@@ -11,7 +15,7 @@ An open protocol, with a Rust reference implementation, that seals a human voice
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.1.1" src="https://img.shields.io/badge/version-0.1.1-informational">
+  <img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -52,7 +56,7 @@ Two modes: **circle** (people who know each other, shared secret) and **public**
 **On the command line:**
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.1.1 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.2.0 vox-trust-cli
 
 vox-trust keygen me.key
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
@@ -95,7 +99,7 @@ Attackers, claims and the weaknesses found so far (including one that is still u
 | Rust unit and integration tests | Seal layout, HMAC and Ed25519 (against RFC 4231 and RFC 8032 vectors), WAV parsing, manifests, tampering, policy, the C interface and the CLI | `cargo test --workspace` |
 | Published test vectors | Byte-exact seals and manifests in [`spec/test-vectors/`](spec/test-vectors) | included above |
 | Cross-check in Python | `tools/check_vectors.py` rebuilds every vector from the spec text (standard library, plus `cryptography` for Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
-| WebAssembly end to end | The compiled module reproduces the vectors byte for byte, handles garbage input, and does not leak memory | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
+| WebAssembly end to end | The compiled module reproduces the vectors byte for byte, handles garbage input, and does not leak memory | `scripts/build-web.sh && node --test tests/node/*.mjs` |
 | Real browser | The demo page in headless Chromium: sealing, six attacks, public-key pinning, accessibility, phone width, dark mode | `node tests/browser/demo.mjs` |
 
 The Python check is written by the same author, so it is a cross-check, not an independent implementation. [An independent implementation is what the spec still needs.](docs/ROADMAP.md)

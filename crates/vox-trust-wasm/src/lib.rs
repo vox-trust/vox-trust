@@ -9,6 +9,7 @@
 //! The only `unsafe` code in the project lives here, at the pointer boundary.
 
 #![deny(unsafe_op_in_unsafe_fn)]
+#![warn(missing_docs)]
 
 use std::cell::RefCell;
 
@@ -111,6 +112,12 @@ pub unsafe extern "C" fn vt_public_key(seed_ptr: *const u8) -> i32 {
 ///
 /// Returns the identifier as a `u32`; if the key pointer is unusable, returns 0 and sets the
 /// result buffer to an error message (callers should pass exactly 32 valid bytes).
+///
+/// **The return value is ambiguous:** `0` is also a legitimate key identifier (about one key
+/// in 2^32), and a successful call leaves the result buffer untouched, so the buffer cannot
+/// tell the two apart either. The C ABI is kept as is for compatibility with existing
+/// callers: always pass a pointer to exactly 32 valid bytes, which makes the failure path
+/// unreachable.
 ///
 /// # Safety
 /// `key_ptr` must be valid for reads of 32 bytes.

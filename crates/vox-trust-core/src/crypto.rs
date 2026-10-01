@@ -23,6 +23,15 @@ pub(crate) fn hmac_sha256(key: &[u8], parts: &[&[u8]]) -> [u8; 32] {
     mac(key, parts).finalize().into_bytes().into()
 }
 
+/// Constant-time equality of two 32-byte values (for secrets).
+pub(crate) fn ct_eq32(a: &[u8; 32], b: &[u8; 32]) -> bool {
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b) {
+        diff |= x ^ y;
+    }
+    core::hint::black_box(diff) == 0
+}
+
 /// Constant-time check of a full 32-byte HMAC-SHA-256 tag.
 pub(crate) fn hmac_verify(key: &[u8], parts: &[&[u8]], tag: &[u8; 32]) -> bool {
     mac(key, parts).verify_slice(tag).is_ok()
@@ -37,7 +46,8 @@ pub(crate) fn sha256(parts: &[&[u8]]) -> [u8; 32] {
     hasher.finalize().into()
 }
 
-/// Ed25519 public key for a 32-byte seed.
+/// Ed25519 public key for a 32-byte seed. The expanded signing key is zeroized on drop
+/// (`ed25519-dalek` feature `zeroize`).
 pub(crate) fn ed25519_public(seed: &[u8; 32]) -> [u8; 32] {
     SigningKey::from_bytes(seed).verifying_key().to_bytes()
 }
@@ -94,6 +104,17 @@ mod tests {
         let mut flipped = tag;
         flipped[31] ^= 1;
         assert!(!hmac_verify(b"k", &[b"m"], &flipped));
+    }
+
+    #[test]
+    fn ct_eq32_compares_every_byte() {
+        let a = [7u8; 32];
+        assert!(ct_eq32(&a, &a));
+        for i in 0..32 {
+            let mut b = a;
+            b[i] ^= 0x80;
+            assert!(!ct_eq32(&a, &b), "byte {i}");
+        }
     }
 
     fn unhex<const N: usize>(s: &str) -> [u8; N] {

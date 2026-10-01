@@ -16,6 +16,7 @@ pub const MANIFEST_CHUNK_ID: [u8; 4] = *b"VOXT";
 
 /// Why a WAV file was rejected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum WavError {
     /// Fewer than 12 bytes.
     TooShort,

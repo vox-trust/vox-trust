@@ -57,7 +57,9 @@ const DOMAIN_PUBLIC: &[u8] = b"vox-trust/0/file-public\0";
 const CHUNK_PREFIX: u8 = 0x01;
 
 /// Who seals a file.
-#[derive(Debug, Clone, Copy)]
+///
+/// `Debug` never prints the secret.
+#[derive(Clone, Copy)]
 pub enum Signer<'a> {
     /// Shared-secret mode.
     Circle {
@@ -73,13 +75,40 @@ pub enum Signer<'a> {
     },
 }
 
+impl fmt::Debug for Signer<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Signer::Circle { key_id, .. } => f
+                .debug_struct("Circle")
+                .field("key", &"[REDACTED]")
+                .field("key_id", key_id)
+                .finish(),
+            Signer::Public { .. } => f
+                .debug_struct("Public")
+                .field("seed", &"[REDACTED]")
+                .finish(),
+        }
+    }
+}
+
 /// What a verifier already trusts.
-#[derive(Debug, Clone, Copy, Default)]
+///
+/// `Debug` never prints the circle key.
+#[derive(Clone, Copy, Default)]
 pub struct Trust<'a> {
     /// A circle key and its identifier, if the verifier has one.
     pub circle: Option<(u32, &'a [u8; 32])>,
     /// The Ed25519 public key the verifier has pinned for this contact, if any.
     pub pinned_public: Option<&'a [u8; 32]>,
+}
+
+impl fmt::Debug for Trust<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Trust")
+            .field("circle", &self.circle.map(|(id, _)| (id, "[REDACTED]")))
+            .field("pinned_public", &self.pinned_public.map(|k| to_hex(k)))
+            .finish()
+    }
 }
 
 /// Parameters of a sealing operation.
@@ -95,6 +124,7 @@ pub struct SealParams {
 
 /// Errors that stop sealing or verifying altogether.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum FileError {
     /// The WAV file was rejected.
     Wav(WavError),
@@ -127,6 +157,7 @@ impl From<WavError> for FileError {
 
 /// Why a check came out the way it did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Reason {
     /// Everything verified.
     None,
@@ -148,6 +179,12 @@ pub enum Reason {
     Modified,
 }
 
+impl fmt::Display for Reason {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 impl Reason {
     /// Stable lower-case name.
     pub fn as_str(self) -> &'static str {
@@ -165,24 +202,9 @@ impl Reason {
     }
 }
 
-fn check_name(check: SealCheck) -> &'static str {
-    match check {
-        SealCheck::Valid => "valid",
-        SealCheck::Invalid => "invalid",
-        SealCheck::UnknownKey => "unknown_key",
-        SealCheck::Absent => "absent",
-    }
-}
-
-fn mode_name(mode: Mode) -> &'static str {
-    match mode {
-        Mode::Circle => "circle",
-        Mode::Public => "public",
-    }
-}
-
 /// The outcome of verifying a file.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Report {
     /// The seal check, input to the trust policy.
     pub check: SealCheck,
@@ -222,6 +244,11 @@ pub struct Report {
     /// `authenticator_valid` and the format matches; empty otherwise.
     pub modified_chunks: Vec<u32>,
     /// For public mode: the public key embedded in the manifest.
+    ///
+    /// **Untrusted unless `authenticator_valid`**: before that it is just bytes read from the
+    /// file, and anyone can embed any key. Even when `authenticator_valid` is true it only
+    /// proves the file was signed by *whoever holds that key*; attribute the file to a person
+    /// only if `authenticated` is true (the key is the one the verifier pinned).
     pub embedded_public_key: Option<[u8; 32]>,
 }
 
@@ -270,9 +297,9 @@ impl Report {
                 "\"authenticator_valid\":{},\"content_matches\":{},",
                 "\"modified_chunks\":[{}],\"embedded_public_key\":{}}}"
             ),
-            check_name(self.check),
-            self.reason.as_str(),
-            opt_str(self.mode.map(|m| mode_name(m).to_string())),
+            self.check,
+            self.reason,
+            opt_str(self.mode.map(|m| m.to_string())),
             opt_str(self.key_id.map(|k| to_hex(&k.to_be_bytes()))),
             opt(self.created_unix),
             opt(self.counter),

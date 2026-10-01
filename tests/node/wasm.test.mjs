@@ -1,5 +1,5 @@
 // End-to-end tests of the compiled WebAssembly core, through the same JavaScript wrapper
-// the browser demo uses. Run: node --test tests/node/
+// the browser demo uses. Run: node --test tests/node/*.mjs
 //
 // Build the module first: scripts/build-web.sh (or set VOX_TRUST_WASM to a .wasm path).
 import assert from "node:assert/strict";

@@ -26,13 +26,6 @@ pub fn pcm_bytes(samples: &[i16]) -> Vec<u8> {
     samples.iter().flat_map(|s| s.to_le_bytes()).collect()
 }
 
-fn mode_name(mode: Mode) -> &'static str {
-    match mode {
-        Mode::Circle => "circle",
-        Mode::Public => "public",
-    }
-}
-
 pub fn seal_vectors() -> Value {
     let key = counting_key(0x00);
     let packing: Vec<Value> = [
@@ -75,7 +68,7 @@ pub fn seal_vectors() -> Value {
         json!({
             "name": name,
             "version": seal.version,
-            "mode": mode_name(seal.mode),
+            "mode": seal.mode.as_str(),
             "key_id": seal.key_id,
             "counter": seal.counter,
             "time": seal.time,
@@ -164,6 +157,185 @@ fn manifest_of(sealed: &[u8]) -> Vec<u8> {
     wav::parse(sealed).unwrap().manifest.unwrap().to_vec()
 }
 
+/// Replaces the manifest of `sealed` with `manifest`.
+fn with_manifest(sealed: &[u8], manifest: &[u8]) -> Vec<u8> {
+    wav::with_manifest(sealed, manifest).unwrap()
+}
+
+struct Trusting {
+    circle: bool,
+    pinned: bool,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn negative(
+    name: &str,
+    description: &str,
+    wav_bytes: &[u8],
+    trust: Trusting,
+    wrong_circle_key: bool,
+    expected: Value,
+) -> Value {
+    let circle_key = if wrong_circle_key {
+        counting_key(0x80)
+    } else {
+        counting_key(0x00)
+    };
+    json!({
+        "name": name,
+        "description": description,
+        "wav": to_hex(wav_bytes),
+        "trust": {
+            "circle_key": trust.circle.then(|| to_hex(&circle_key)),
+            "circle_key_id": trust.circle.then_some(CIRCLE_KEY_ID),
+            "pinned_public": trust.pinned.then(|| to_hex(&file::public_key(&counting_key(0x40)))),
+        },
+        "expected": expected,
+    })
+}
+
+fn verdict(check: &str, reason: &str, modified: &[u32], content_matches: bool) -> Value {
+    json!({
+        "check": check,
+        "reason": reason,
+        "modified_chunks": modified,
+        "content_matches": content_matches,
+    })
+}
+
+/// Files that must NOT verify as `valid`, each with the exact outcome a verifier must report.
+/// All are built from the first case of [`cases`].
+pub fn negative_vectors() -> Value {
+    let case = &cases()[0];
+    let circle_key = counting_key(0x00);
+    let seed = counting_key(0x40);
+    let pcm = pcm_bytes(&case.samples);
+    let original = wav::encode_pcm16(case.channels, case.sample_rate, &pcm).unwrap();
+    let params = |counter| SealParams {
+        created_unix: CREATED_UNIX,
+        counter,
+        chunk_frames: case.chunk_frames,
+    };
+    let circle = file::seal_wav(
+        &original,
+        Signer::Circle {
+            key: &circle_key,
+            key_id: CIRCLE_KEY_ID,
+        },
+        params(7),
+    )
+    .unwrap();
+    let public = file::seal_wav(&original, Signer::Public { seed: &seed }, params(8)).unwrap();
+    let circle_manifest = manifest_of(&circle);
+    let public_manifest = manifest_of(&public);
+    let both = |circle, pinned| Trusting { circle, pinned };
+
+    let mut out = Vec::new();
+
+    let mut m = public_manifest.clone();
+    *m.last_mut().unwrap() ^= 0x01;
+    out.push(negative(
+        "public-bad-signature",
+        "one bit of the Ed25519 signature flipped; the audio is untouched",
+        &with_manifest(&public, &m),
+        both(false, true),
+        false,
+        verdict("invalid", "bad_signature", &[], false),
+    ));
+
+    let mut m = public_manifest.clone();
+    m[9] ^= 0x01; // key_id no longer equals the first 4 bytes of SHA-256(embedded key)
+    out.push(negative(
+        "public-wrong-key-id",
+        "the declared key id is not the first 4 bytes of SHA-256 of the embedded public key",
+        &with_manifest(&public, &m),
+        both(false, true),
+        false,
+        verdict("invalid", "malformed", &[], false),
+    ));
+
+    out.push(negative(
+        "circle-truncated-manifest",
+        "the last byte of the manifest is missing",
+        &with_manifest(&circle, &circle_manifest[..circle_manifest.len() - 1]),
+        both(true, false),
+        false,
+        verdict("invalid", "malformed", &[], false),
+    ));
+
+    let mut m = circle_manifest.clone();
+    m[0] ^= 0x01;
+    out.push(negative(
+        "circle-bad-magic",
+        "the manifest does not start with VOXT",
+        &with_manifest(&circle, &m),
+        both(true, false),
+        false,
+        verdict("invalid", "malformed", &[], false),
+    ));
+
+    let mut m = circle_manifest.clone();
+    m[4] = 1;
+    out.push(negative(
+        "circle-unsupported-version",
+        "manifest version 1 is unknown to a version-0 verifier",
+        &with_manifest(&circle, &m),
+        both(true, false),
+        false,
+        verdict("invalid", "unsupported_version", &[], false),
+    ));
+
+    out.push(negative(
+        "circle-wrong-key",
+        "the verifier holds a key with the right id but the wrong secret",
+        &circle,
+        both(true, false),
+        true,
+        verdict("invalid", "bad_authenticator", &[], false),
+    ));
+
+    let resampled = wav::encode_pcm16(case.channels, case.sample_rate * 2, &pcm).unwrap();
+    out.push(negative(
+        "circle-format-changed",
+        "same samples and manifest, but the file now declares twice the sample rate",
+        &with_manifest(&resampled, &circle_manifest),
+        both(true, false),
+        false,
+        verdict("invalid", "format_changed", &[], false),
+    ));
+
+    out.push(negative(
+        "public-unpinned-key-intact",
+        "a genuine signature by a key the verifier has not pinned: intact, but not attributed",
+        &public,
+        both(false, false),
+        false,
+        verdict("unknown_key", "untrusted_key", &[], true),
+    ));
+
+    out.push(negative(
+        "circle-no-key",
+        "a circle seal and no circle key: nothing in the manifest can be checked",
+        &circle,
+        both(false, false),
+        false,
+        verdict("unknown_key", "untrusted_key", &[], false),
+    ));
+
+    let mut trailing = circle.clone();
+    trailing.push(0);
+    out.push(negative(
+        "circle-trailing-bytes",
+        "one byte after the end of the RIFF container: the file is rejected, not verified",
+        &trailing,
+        both(true, false),
+        false,
+        json!({ "error": "trailing_bytes" }),
+    ));
+
+    Value::Array(out)
+}
+
 pub fn file_vectors() -> Value {
     let circle_key = counting_key(0x00);
     let seed = counting_key(0x40);
@@ -245,7 +417,8 @@ pub fn file_vectors() -> Value {
         .collect();
 
     json!({
-        "description": "Vox Trust file-mode vectors, draft 0.1. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything.",
+        "description": "Vox Trust file-mode vectors, draft 0.1. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything. `cases` are positive; `negative` files must NOT verify as valid and carry the exact expected outcome.",
         "cases": cases,
+        "negative": negative_vectors(),
     })
 }

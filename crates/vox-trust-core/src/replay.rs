@@ -10,6 +10,7 @@ use std::collections::{HashMap, VecDeque};
 
 /// Result of a replay check.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ReplayVerdict {
     /// First seal seen for this key, or a counter newer than the last accepted one.
     Fresh,

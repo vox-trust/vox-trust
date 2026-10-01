@@ -382,3 +382,131 @@ fn non_utf8_paths_do_not_panic() {
         .unwrap();
     assert_eq!(code(&out), 66, "a missing file, not a panic");
 }
+
+#[test]
+fn report_names_are_unchanged() {
+    let dir = Dir::new();
+    let (clip, sealed) = (dir.path("clip.wav"), dir.path("sealed.wav"));
+    write_clip(&clip);
+    let key = keygen(&dir, "k.key");
+    run(&["seal", &clip, &sealed, "--mode", "circle", "--key", &key]);
+
+    let ok = run(&["verify", &sealed, "--circle-key", &key, "--json"]);
+    let json = text(&ok);
+    assert!(
+        json.starts_with("{\"verdict\":\"verified\",\"report\":{\"check\":\"valid\",\"reason\":\"none\",\"mode\":\"circle\","),
+        "{json}"
+    );
+    let human = text(&run(&["verify", &sealed, "--circle-key", &key]));
+    assert!(
+        human.contains("verdict: verified\nseal:    valid (none)\nmode:    circle   key id: "),
+        "{human}"
+    );
+
+    let none = run(&["verify", &sealed, "--json"]);
+    assert!(text(&none).starts_with("{\"verdict\":\"unsealed\",\"report\":{\"check\":\"unknown_key\",\"reason\":\"untrusted_key\""));
+    let human = text(&run(&["verify", &sealed]));
+    assert!(
+        human.contains("seal:    unknown key (untrusted_key)"),
+        "{human}"
+    );
+    assert!(
+        human.contains("declared mode: circle   declared key id: "),
+        "{human}"
+    );
+
+    for (contact, name) in [("always", "alert"), ("strict", "alert")] {
+        let out = run(&["verify", &sealed, "--contact", contact]);
+        assert!(text(&out).starts_with(&format!("verdict: {name}\n")));
+    }
+    let unsealed = text(&run(&["verify", &clip, "--contact", "always"]));
+    assert!(
+        unsealed.starts_with("verdict: warning\nseal:    absent (no_manifest)\n"),
+        "{unsealed}"
+    );
+}
+
+#[test]
+fn an_unverified_embedded_key_is_never_attributed() {
+    let dir = Dir::new();
+    let (clip, sealed, forged) = (
+        dir.path("clip.wav"),
+        dir.path("sealed.wav"),
+        dir.path("forged.wav"),
+    );
+    write_clip(&clip);
+    let seed = keygen(&dir, "seed.key");
+    run(&["seal", &clip, &sealed, "--mode", "public", "--key", &seed]);
+
+    // Genuine signature, key not pinned: the key is real but not trusted.
+    let genuine = text(&run(&["verify", &sealed]));
+    assert!(genuine.contains("signed by public key: "), "{genuine}");
+    assert!(
+        genuine.contains("\nmode:    public   key id: "),
+        "{genuine}"
+    );
+
+    // Break the signature: the embedded key is only a claim.
+    let mut bytes = fs::read(&sealed).unwrap();
+    let manifest_end = {
+        let w = wav::parse(&bytes).unwrap();
+        w.manifest.unwrap().as_ptr() as usize - bytes.as_ptr() as usize + w.manifest.unwrap().len()
+    };
+    bytes[manifest_end - 1] ^= 1;
+    fs::write(&forged, bytes).unwrap();
+    let out = run(&["verify", &forged]);
+    let shown = text(&out);
+    assert_eq!(code(&out), 3, "{shown}");
+    assert!(shown.contains("embedded key (unverified): "), "{shown}");
+    assert!(!shown.contains("signed by"), "{shown}");
+    assert!(
+        shown.contains("declared mode: public   declared key id: "),
+        "{shown}"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn a_closed_stdout_does_not_panic_and_keeps_the_verdict_code() {
+    use std::process::Stdio;
+    let dir = Dir::new();
+    let clip = dir.path("clip.wav");
+    write_clip(&clip);
+    for _ in 0..20 {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_vox-trust"))
+            .args(["verify", &clip, "--contact", "always"])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        drop(child.stdout.take()); // the reader goes away before the tool writes
+        let out = child.wait_with_output().unwrap();
+        assert_eq!(
+            out.status.code(),
+            Some(2),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        assert!(!String::from_utf8_lossy(&out.stderr).contains("panicked"));
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn seal_with_force_keeps_the_mode_of_the_replaced_file() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = Dir::new();
+    let (clip, out) = (dir.path("clip.wav"), dir.path("out.wav"));
+    write_clip(&clip);
+    let key = keygen(&dir, "k.key");
+    fs::write(&out, b"old").unwrap();
+    fs::set_permissions(&out, fs::Permissions::from_mode(0o640)).unwrap();
+    let sealed = run(&[
+        "seal", &clip, &out, "--mode", "circle", "--key", &key, "--force",
+    ]);
+    assert_eq!(code(&sealed), 0, "{}", err(&sealed));
+    assert_eq!(
+        fs::metadata(&out).unwrap().permissions().mode() & 0o777,
+        0o640
+    );
+}

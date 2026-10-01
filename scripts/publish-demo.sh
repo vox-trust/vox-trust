@@ -8,7 +8,10 @@ cd "$(dirname "$0")/.."
 site="${1:?usage: scripts/publish-demo.sh /path/to/vox-trust.github.io}"
 [ -f web/vox_trust.wasm ] || scripts/build-web.sh
 
+if [ -n "$(git status --porcelain)" ]; then echo "warning: working tree is dirty; BUILD-INFO.txt will not match the commit" >&2; fi
 mkdir -p "$site/demo"
+rm -rf "$site/demo/i18n"
+cp -r web/i18n "$site/demo/i18n"
 cp web/index.html web/demo.css web/demo.js web/vox-trust.js web/vox_trust.wasm "$site/demo/"
 {
   echo "source:  https://github.com/vox-trust/vox-trust"

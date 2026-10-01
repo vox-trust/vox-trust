@@ -95,5 +95,164 @@
       ]
     }
   ],
-  "description": "Vox Trust file-mode vectors, draft 0.1. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything."
+  "description": "Vox Trust file-mode vectors, draft 0.1. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything. `cases` are positive; `negative` files must NOT verify as valid and carry the exact expected outcome.",
+  "negative": [
+    {
+      "description": "one bit of the Ed25519 signature flipped; the audio is untouched",
+      "expected": {
+        "check": "invalid",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "bad_signature"
+      },
+      "name": "public-bad-signature",
+      "trust": {
+        "circle_key": null,
+        "circle_key_id": null,
+        "pinned_public": "2543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d"
+      },
+      "wav": "524946462e01000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ee000000564f5854000103396219000000006553f1000000000800001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e902543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d9c48a0faf36a1837de4239f098243e7374b6f3c199128e76a1fe97669773be4ea97142acec52a6f27c4f9443c0f071c80cbeacea70c5917e4784a425b4b9850f"
+    },
+    {
+      "description": "the declared key id is not the first 4 bytes of SHA-256 of the embedded public key",
+      "expected": {
+        "check": "invalid",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "malformed"
+      },
+      "name": "public-wrong-key-id",
+      "trust": {
+        "circle_key": null,
+        "circle_key_id": null,
+        "pinned_public": "2543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d"
+      },
+      "wav": "524946462e01000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ee000000564f5854000103396218000000006553f1000000000800001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e902543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d9c48a0faf36a1837de4239f098243e7374b6f3c199128e76a1fe97669773be4ea97142acec52a6f27c4f9443c0f071c80cbeacea70c5917e4784a425b4b9850e"
+    },
+    {
+      "description": "the last byte of the manifest is missing",
+      "expected": {
+        "check": "invalid",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "malformed"
+      },
+      "name": "circle-truncated-manifest",
+      "trust": {
+        "circle_key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "circle_key_id": 16909060,
+        "pinned_public": null
+      },
+      "wav": "52494646ee00000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ad000000564f5854000001020304000000006553f1000000000700001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e90e57998b7bb5de1b9a3b42da6024fba1271b449c1a45b8524f0388a9e51ce5600"
+    },
+    {
+      "description": "the manifest does not start with VOXT",
+      "expected": {
+        "check": "invalid",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "malformed"
+      },
+      "name": "circle-bad-magic",
+      "trust": {
+        "circle_key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "circle_key_id": 16909060,
+        "pinned_public": null
+      },
+      "wav": "52494646ee00000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ae000000574f5854000001020304000000006553f1000000000700001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e90e57998b7bb5de1b9a3b42da6024fba1271b449c1a45b8524f0388a9e51ce56de"
+    },
+    {
+      "description": "manifest version 1 is unknown to a version-0 verifier",
+      "expected": {
+        "check": "invalid",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "unsupported_version"
+      },
+      "name": "circle-unsupported-version",
+      "trust": {
+        "circle_key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "circle_key_id": 16909060,
+        "pinned_public": null
+      },
+      "wav": "52494646ee00000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ae000000564f5854010001020304000000006553f1000000000700001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e90e57998b7bb5de1b9a3b42da6024fba1271b449c1a45b8524f0388a9e51ce56de"
+    },
+    {
+      "description": "the verifier holds a key with the right id but the wrong secret",
+      "expected": {
+        "check": "invalid",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "bad_authenticator"
+      },
+      "name": "circle-wrong-key",
+      "trust": {
+        "circle_key": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f",
+        "circle_key_id": 16909060,
+        "pinned_public": null
+      },
+      "wav": "52494646ee00000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ae000000564f5854000001020304000000006553f1000000000700001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e90e57998b7bb5de1b9a3b42da6024fba1271b449c1a45b8524f0388a9e51ce56de"
+    },
+    {
+      "description": "same samples and manifest, but the file now declares twice the sample rate",
+      "expected": {
+        "check": "invalid",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "format_changed"
+      },
+      "name": "circle-format-changed",
+      "trust": {
+        "circle_key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "circle_key_id": 16909060,
+        "pinned_public": null
+      },
+      "wav": "52494646ee00000057415645666d74201000000001000100803e0000007d00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ae000000564f5854000001020304000000006553f1000000000700001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e90e57998b7bb5de1b9a3b42da6024fba1271b449c1a45b8524f0388a9e51ce56de"
+    },
+    {
+      "description": "a genuine signature by a key the verifier has not pinned: intact, but not attributed",
+      "expected": {
+        "check": "unknown_key",
+        "content_matches": true,
+        "modified_chunks": [],
+        "reason": "untrusted_key"
+      },
+      "name": "public-unpinned-key-intact",
+      "trust": {
+        "circle_key": null,
+        "circle_key_id": null,
+        "pinned_public": null
+      },
+      "wav": "524946462e01000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ee000000564f5854000103396219000000006553f1000000000800001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e902543b92ff1095511476adc8369db6ddc933665a11978dda1404ee1066ca9559d9c48a0faf36a1837de4239f098243e7374b6f3c199128e76a1fe97669773be4ea97142acec52a6f27c4f9443c0f071c80cbeacea70c5917e4784a425b4b9850e"
+    },
+    {
+      "description": "a circle seal and no circle key: nothing in the manifest can be checked",
+      "expected": {
+        "check": "unknown_key",
+        "content_matches": false,
+        "modified_chunks": [],
+        "reason": "untrusted_key"
+      },
+      "name": "circle-no-key",
+      "trust": {
+        "circle_key": null,
+        "circle_key_id": null,
+        "pinned_public": null
+      },
+      "wav": "52494646ee00000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ae000000564f5854000001020304000000006553f1000000000700001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e90e57998b7bb5de1b9a3b42da6024fba1271b449c1a45b8524f0388a9e51ce56de"
+    },
+    {
+      "description": "one byte after the end of the RIFF container: the file is rejected, not verified",
+      "expected": {
+        "error": "trailing_bytes"
+      },
+      "name": "circle-trailing-bytes",
+      "trust": {
+        "circle_key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "circle_key_id": 16909060,
+        "pinned_public": null
+      },
+      "wav": "52494646ee00000057415645666d74201000000001000100401f0000803e00000200100064617461140000000000e80318fcff7f00800500fbff3930c7cf0700564f5854ae000000564f5854000001020304000000006553f1000000000700001f4000010010000000000000000a000000040000000334077eb86a2b24f2b8c4fe2954878a33c1f4821f67e937c65043e21f2de44d0fc2b47524d472c746067503df1af123f51f5929908e48cd59f7e47adb65bf9740d1d3e9d02b4c56bfb02a33a7f7c608fc275062009a6eabf2ce59364378776e90e57998b7bb5de1b9a3b42da6024fba1271b449c1a45b8524f0388a9e51ce56de00"
+    }
+  ]
 }

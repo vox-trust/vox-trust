@@ -4,13 +4,14 @@
 
 use std::ffi::{OsStr, OsString};
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use vox_trust_core::file::{self, Reason, SealParams, Signer, Trust};
 use vox_trust_core::{circle, decide, to_hex, wav, ContactState, SealCheck, Verdict};
+use zeroize::Zeroizing;
 
 const USAGE: &str = "\
 vox-trust: seal and verify WAV files (file mode, pre-1.0, unaudited)
@@ -31,7 +32,9 @@ KEYS
 
 SEAL OUTPUT
   `seal` refuses to overwrite an existing OUT.wav (pass --force to replace it) and never
-  writes over IN.wav. The output is written to a temporary file and renamed into place.
+  writes over IN.wav. The output is written to a temporary file and then moved into place;
+  without --force the move cannot replace a file that appeared in the meantime (it needs
+  a file system that supports hard links, otherwise use --force).
 
 EXIT CODES (verify)
   0 verified   1 unsealed   2 warning   3 alert
@@ -49,6 +52,13 @@ const EX_USAGE: u8 = 64;
 const EX_DATAERR: u8 = 65;
 const EX_NOINPUT: u8 = 66;
 const EX_CANTCREAT: u8 = 73;
+
+/// Writes to stdout and ignores a closed pipe (`vox-trust verify f | head -0`): the exit
+/// code is the verdict, and `println!` would panic with status 101 instead.
+fn emit(text: &str) {
+    let mut out = io::stdout().lock();
+    let _ = out.write_all(text.as_bytes()).and_then(|()| out.flush());
+}
 
 struct Failure(u8, String);
 
@@ -142,12 +152,12 @@ impl Args {
     }
 }
 
-fn parse_hex32(text: &str) -> Option<[u8; 32]> {
+fn parse_hex32(text: &str) -> Option<Zeroizing<[u8; 32]>> {
     let text = text.trim();
     if text.len() != 64 || !text.bytes().all(|b| b.is_ascii_hexdigit()) {
         return None;
     }
-    let mut out = [0u8; 32];
+    let mut out = Zeroizing::new([0u8; 32]);
     for (i, byte) in out.iter_mut().enumerate() {
         *byte = u8::from_str_radix(&text[2 * i..2 * i + 2], 16).ok()?;
     }
@@ -185,7 +195,7 @@ fn read_bounded(path: &Path, cap: u64, what: &str) -> Result<Vec<u8>> {
     if meta.len() > cap {
         return Err(too_big());
     }
-    let mut out = Vec::new();
+    let mut out = Vec::with_capacity(usize::try_from(meta.len()).unwrap_or(0) + 1);
     fs::File::open(path)
         .map_err(unreadable)?
         .take(cap + 1)
@@ -197,10 +207,10 @@ fn read_bounded(path: &Path, cap: u64, what: &str) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn read_key_file(path: &Path) -> Result<[u8; 32]> {
-    let bytes = read_bounded(path, KEY_FILE_CAP, "key file")?;
-    let text = String::from_utf8(bytes).ok();
-    text.as_deref().and_then(parse_hex32).ok_or_else(|| {
+fn read_key_file(path: &Path) -> Result<Zeroizing<[u8; 32]>> {
+    let bytes = Zeroizing::new(read_bounded(path, KEY_FILE_CAP, "key file")?);
+    let text = std::str::from_utf8(&bytes).ok();
+    text.and_then(parse_hex32).ok_or_else(|| {
         Failure(
             EX_DATAERR,
             format!("{} must contain exactly 64 hex characters", path.display()),
@@ -223,8 +233,13 @@ fn same_file(a: &Path, b: &Path) -> bool {
     matches!((fs::canonicalize(a), fs::canonicalize(b)), (Ok(x), Ok(y)) if x == y)
 }
 
-/// Writes `data` to a sibling temporary file, syncs it, then renames it over `output`.
-fn write_atomic(output: &Path, data: &[u8]) -> std::io::Result<()> {
+/// Writes `data` to a sibling temporary file, syncs it, then puts it at `output`.
+///
+/// With `force` the temporary file is renamed over `output` (keeping the permissions of the
+/// file it replaces). Without `force` it is hard-linked to `output`, which fails with
+/// `AlreadyExists` instead of replacing a file created after the caller's check, and then
+/// the temporary name is removed. A file system without hard links gives an error.
+fn write_atomic(output: &Path, data: &[u8], force: bool) -> io::Result<()> {
     let dir = match output.parent() {
         Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
         _ => PathBuf::from("."),
@@ -239,11 +254,22 @@ fn write_atomic(output: &Path, data: &[u8]) -> std::io::Result<()> {
             .create_new(true)
             .open(&tmp)?;
         file.write_all(data)?;
+        if force {
+            if let Ok(meta) = fs::metadata(output) {
+                if meta.is_file() {
+                    fs::set_permissions(&tmp, meta.permissions())?;
+                }
+            }
+        }
         file.sync_all()?;
         drop(file);
-        fs::rename(&tmp, output)
+        if force {
+            fs::rename(&tmp, output)
+        } else {
+            fs::hard_link(&tmp, output)
+        }
     })();
-    if result.is_err() {
+    if !force || result.is_err() {
         let _ = fs::remove_file(&tmp);
     }
     result
@@ -259,8 +285,8 @@ fn cmd_keygen(args: &Args) -> Result<()> {
     args.check_known(&[])?;
     args.expect_positional(1, "keygen KEYFILE")?;
     let path = Path::new(&args.positional[0]);
-    let mut key = [0u8; 32];
-    getrandom::fill(&mut key).map_err(|e| Failure(EX_CANTCREAT, format!("no randomness: {e}")))?;
+    let mut key = Zeroizing::new([0u8; 32]);
+    getrandom::fill(&mut *key).map_err(|e| Failure(EX_CANTCREAT, format!("no randomness: {e}")))?;
 
     let mut options = fs::OpenOptions::new();
     options.write(true).create_new(true);
@@ -275,7 +301,8 @@ fn cmd_keygen(args: &Args) -> Result<()> {
             format!("cannot create {}: {e}", path.display()),
         )
     })?;
-    if let Err(e) = writeln!(file, "{}", to_hex(&key)).and_then(|()| file.sync_all()) {
+    let hex = Zeroizing::new(to_hex(&*key));
+    if let Err(e) = writeln!(file, "{}", &*hex).and_then(|()| file.sync_all()) {
         drop(file);
         let _ = fs::remove_file(path);
         return Err(Failure(
@@ -284,18 +311,14 @@ fn cmd_keygen(args: &Args) -> Result<()> {
         ));
     }
     drop(file);
-    println!(
-        "wrote a new 32-byte secret to {} (keep it private)",
-        path.display()
-    );
-    println!(
-        "circle key id: {}",
-        to_hex(&circle::key_id(&key).to_be_bytes())
-    );
-    println!(
-        "if you use it as a public-mode seed, the public key is: {}",
+    emit(&format!(
+        "wrote a new 32-byte secret to {} (keep it private)\n\
+         circle key id: {}\n\
+         if you use it as a public-mode seed, the public key is: {}\n",
+        path.display(),
+        to_hex(&circle::key_id(&key).to_be_bytes()),
         to_hex(&file::public_key(&key))
-    );
+    ));
     Ok(())
 }
 
@@ -304,11 +327,11 @@ fn cmd_pubkey(args: &Args) -> Result<()> {
     args.expect_positional(1, "pubkey KEYFILE")?;
     let seed = read_key_file(Path::new(&args.positional[0]))?;
     let public = file::public_key(&seed);
-    println!("public key: {}", to_hex(&public));
-    println!(
-        "key id:     {}",
+    emit(&format!(
+        "public key: {}\nkey id:     {}\n",
+        to_hex(&public),
         to_hex(&file::public_key_id(&public).to_be_bytes())
-    );
+    ));
     Ok(())
 }
 
@@ -385,56 +408,57 @@ fn cmd_seal(args: &Args) -> Result<()> {
         },
     )
     .map_err(|e| Failure(EX_DATAERR, format!("{}: {e}", input.display())))?;
-    write_atomic(output, &sealed).map_err(|e| {
+    write_atomic(output, &sealed, force).map_err(|e| {
+        let why = if e.kind() == io::ErrorKind::AlreadyExists {
+            "it already exists; pass --force to replace it".to_string()
+        } else {
+            e.to_string()
+        };
         Failure(
             EX_CANTCREAT,
-            format!("cannot write {}: {e}", output.display()),
+            format!("cannot write {}: {why}", output.display()),
         )
     })?;
-    println!(
-        "sealed {} -> {} ({mode} mode, chunks of {chunk_frames} frames, {} bytes added)",
+    emit(&format!(
+        "sealed {} -> {} ({mode} mode, chunks of {chunk_frames} frames, {} bytes added)\n",
         input.display(),
         output.display(),
         sealed.len().saturating_sub(bytes.len())
-    );
+    ));
     Ok(())
 }
 
-fn verdict_name(v: Verdict) -> &'static str {
-    match v {
-        Verdict::Verified => "verified",
-        Verdict::Unsealed => "unsealed",
-        Verdict::Warning => "warning",
-        Verdict::Alert => "alert",
-    }
+/// Human wording of a check: the stable name with spaces (`unknown_key` -> `unknown key`).
+fn check_label(check: SealCheck) -> String {
+    check.as_str().replace('_', " ")
 }
 
 fn describe(report: &file::Report, verdict: Verdict) -> String {
     let rate = f64::from(report.sample_rate.max(1));
     let mut out = String::new();
-    out.push_str(&format!("verdict: {}\n", verdict_name(verdict)));
+    out.push_str(&format!("verdict: {verdict}\n"));
     out.push_str(&format!(
         "seal:    {} ({})\n",
-        match report.check {
-            SealCheck::Valid => "valid",
-            SealCheck::Invalid => "invalid",
-            SealCheck::UnknownKey => "unknown key",
-            SealCheck::Absent => "absent",
-        },
-        report.reason.as_str()
+        check_label(report.check),
+        report.reason
     ));
+    // Until the authenticator verifies, everything read from the manifest is only what the
+    // file claims: a forger can write any mode or key id.
     if let (Some(mode), Some(key_id)) = (report.mode, report.key_id) {
-        out.push_str(&format!(
-            "mode:    {}   key id: {}\n",
-            match mode {
-                vox_trust_core::Mode::Circle => "circle",
-                vox_trust_core::Mode::Public => "public",
-            },
-            to_hex(&key_id.to_be_bytes())
-        ));
+        let id = to_hex(&key_id.to_be_bytes());
+        if report.authenticator_valid {
+            out.push_str(&format!("mode:    {mode}   key id: {id}\n"));
+        } else {
+            out.push_str(&format!("declared mode: {mode}   declared key id: {id}\n"));
+        }
     }
     if let Some(key) = report.embedded_public_key {
-        out.push_str(&format!("signed by public key: {}\n", to_hex(&key)));
+        let label = if report.authenticator_valid {
+            "signed by public key"
+        } else {
+            "embedded key (unverified)"
+        };
+        out.push_str(&format!("{label}: {}\n", to_hex(&key)));
     }
     if report.authenticated {
         if let (Some(created), Some(counter)) = (report.created_unix, report.counter) {
@@ -474,8 +498,8 @@ fn cmd_verify(args: &Args) -> Result<u8> {
     let pinned: Option<[u8; 32]> = match args.get_os("pin") {
         None => None,
         Some(value) => Some(match value.to_str().and_then(parse_hex32) {
-            Some(key) => key,
-            None => read_key_file(Path::new(value))?,
+            Some(key) => *key,
+            None => *read_key_file(Path::new(value))?,
         }),
     };
     let contact = match args.get("contact")?.unwrap_or("stranger") {
@@ -493,23 +517,23 @@ fn cmd_verify(args: &Args) -> Result<u8> {
 
     let bytes = read_file(path)?;
     let trust = Trust {
-        circle: circle_key.as_ref().map(|k| (circle::key_id(k), k)),
+        circle: circle_key.as_ref().map(|k| (circle::key_id(k), &**k)),
         pinned_public: pinned.as_ref(),
     };
     let report = file::verify_wav(&bytes, trust)
         .map_err(|e| Failure(EX_DATAERR, format!("{}: {e}", path.display())))?;
     let verdict = decide(report.check, contact);
     if args.has("json") {
-        println!(
-            "{{\"verdict\":\"{}\",\"report\":{}}}",
-            verdict_name(verdict),
+        emit(&format!(
+            "{{\"verdict\":\"{verdict}\",\"report\":{}}}\n",
             report.to_json()
-        );
+        ));
     } else {
-        print!("{}", describe(&report, verdict));
+        let mut text = describe(&report, verdict);
         if report.check == SealCheck::UnknownKey && report.reason == Reason::UntrustedKey {
-            println!("hint:    pass the key you trust with --circle-key or --pin");
+            text.push_str("hint:    pass the key you trust with --circle-key or --pin\n");
         }
+        emit(&text);
     }
     Ok(verdict.code() as u8)
 }
@@ -528,7 +552,7 @@ fn run(raw: &[OsString]) -> Result<u8> {
     if known {
         let args = Args::parse(rest, switches)?;
         if args.has("help") {
-            print!("{USAGE}");
+            emit(USAGE);
             return Ok(0);
         }
         return match command.as_ref() {
@@ -540,7 +564,7 @@ fn run(raw: &[OsString]) -> Result<u8> {
     }
     match command.as_ref() {
         "-h" | "--help" | "help" => {
-            print!("{USAGE}");
+            emit(USAGE);
             Ok(0)
         }
         other => Err(usage(format!("unknown command {other}"))),
@@ -558,5 +582,60 @@ fn main() -> ExitCode {
             }
             ExitCode::from(code)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn scratch(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("vox-trust-unit-{}-{tag}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn leftovers(dir: &Path) -> usize {
+        fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_name().to_string_lossy().ends_with(".tmp"))
+            .count()
+    }
+
+    #[test]
+    fn without_force_a_file_that_appeared_is_never_replaced() {
+        let dir = scratch("noforce");
+        let out = dir.join("out.wav");
+        // The file the caller's pre-check did not see.
+        fs::write(&out, b"someone else's file").unwrap();
+        let err = write_atomic(&out, b"sealed", false).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::AlreadyExists);
+        assert_eq!(fs::read(&out).unwrap(), b"someone else's file");
+        assert_eq!(leftovers(&dir), 0);
+
+        let fresh = dir.join("fresh.wav");
+        write_atomic(&fresh, b"sealed", false).unwrap();
+        assert_eq!(fs::read(&fresh).unwrap(), b"sealed");
+        assert_eq!(leftovers(&dir), 0, "the temporary name is removed");
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn force_replaces_and_keeps_the_existing_mode() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = scratch("force");
+        let out = dir.join("out.wav");
+        fs::write(&out, b"old").unwrap();
+        fs::set_permissions(&out, fs::Permissions::from_mode(0o640)).unwrap();
+        write_atomic(&out, b"new", true).unwrap();
+        assert_eq!(fs::read(&out).unwrap(), b"new");
+        assert_eq!(
+            fs::metadata(&out).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
+        assert_eq!(leftovers(&dir), 0);
+        fs::remove_dir_all(&dir).unwrap();
     }
 }

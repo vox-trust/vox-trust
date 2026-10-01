@@ -20,6 +20,8 @@ If the design and implementation are correct, then:
 - We do not claim audio is *true*, only that it was sealed by that key.
 - We do not claim protection when a key is stolen or the signer's device is compromised.
 - We do not claim a missing seal means the audio is fake.
+- **We do not claim a pairing label is unique or unambiguous.** Labels are neither normalized nor checked for look-alike characters (homoglyphs, combining sequences), so visually identical labels can name different pairings. Only the invisible and control characters (Unicode Cc, Cf, Zl, Zp) are rejected. A label is a hint for humans: identify a contact by its key identifier.
+- **We do not claim a key embedded in a file names its signer.** In public mode the manifest carries the public key it claims to be signed by; that key is untrusted data unless the signature verifies, and even then it only shows that *some holder of that key* signed. Only a key the verifier pinned attributes the file to a contact. Tools should say "embedded key (unverified)" until the authenticator has verified.
 - **We do not claim an in-band seal is bound to the audio it travels in** (A11). Only file mode is.
 - Nothing here has been reviewed or audited.
 

@@ -160,6 +160,8 @@ voxtrust:0:public:<64 hex: the Ed25519 public key>[:<label>]
 
 The label is optional, non-empty UTF-8, at most 64 bytes, percent-encoded (everything except `A-Z a-z 0-9 - . _ ~` as `%XX`). Labels MUST NOT contain Unicode categories Cc, Cf, Zl or Zp (control characters, bidi overrides, zero-width and other invisible formatting characters, line and paragraph separators). Each value has exactly one text form, and a parser MUST reject any other: keys are lowercase hexadecimal, `%XX` uses uppercase hexadecimal, unreserved characters are never escaped, and an empty trailing label (`...:`) is invalid. A circle pairing text contains a secret and MUST NOT be sent over a network or logged.
 
+Labels are **not normalized**: a parser MUST NOT apply Unicode normalization (NFC, NFD, NFKC, NFKD) or case folding, and compares labels byte for byte. Two labels that look identical (precomposed `é` versus `e` plus a combining accent, or look-alike letters from different scripts) can therefore be different, and a label is a hint for humans, never an identity or a way to tell two pairings apart. Software that shows a label SHOULD show the key identifier next to it.
+
 *Key discovery for public mode beyond in-person exchange (DNS, a well-known HTTPS path) is TBD.*
 
 ## 10. Carrier interface (draft, not built)

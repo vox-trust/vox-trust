@@ -5,14 +5,14 @@
 //! - [`pairing`]: the text exchanged in person (for example in a QR code) to share a key.
 //! - [`policy`]: the trust-policy decision table.
 //! - [`replay`]: replay detection and failure rate limiting for verifiers.
-//! - [`wav`] and [`file`]: *file mode*, a signed manifest that travels inside a WAV
+//! - [`wav`] and [`mod@file`]: *file mode*, a signed manifest that travels inside a WAV
 //!   file and shows which chunks of audio were altered.
 //!
 //! There is **no audio watermark** here yet: file mode only survives bit-exact copies.
 //! See the specification and threat model in the repository before relying on any of it.
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 pub mod circle;
 mod crypto;

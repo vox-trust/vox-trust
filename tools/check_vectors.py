@@ -112,6 +112,115 @@ def wav_bytes(channels, rate, pcm, manifest=None):
     return b"RIFF" + struct.pack("<I", len(body) + 4) + b"WAVE" + body
 
 
+class WavRejected(Exception):
+    """The WAV container itself is unreadable (the Rust `FileError`)."""
+
+
+def parse_wav(data):
+    """Minimal strict RIFF reader: returns (channels, rate, pcm, manifest or None)."""
+    if len(data) < 12:
+        raise WavRejected("too_short")
+    if data[:4] != b"RIFF" or data[8:12] != b"WAVE":
+        raise WavRejected("not_riff_wave")
+    end = struct.unpack("<I", data[4:8])[0] + 8
+    if end > len(data) or end < 12:
+        raise WavRejected("truncated_chunk")
+    if end != len(data):
+        raise WavRejected("trailing_bytes")
+    chunks, pos = {}, 12
+    while pos + 8 <= end:
+        cid = data[pos:pos + 4]
+        size = struct.unpack("<I", data[pos + 4:pos + 8])[0]
+        if pos + 8 + size > end:
+            raise WavRejected("truncated_chunk")
+        if cid in chunks:
+            raise WavRejected("duplicate_chunk")
+        chunks[cid] = data[pos + 8:pos + 8 + size]
+        pos += 8 + size + (size & 1)
+    if pos != end:
+        raise WavRejected("size_mismatch")
+    fmt = chunks[b"fmt "]
+    _, channels, rate = struct.unpack("<HHI", fmt[:8])
+    return channels, rate, chunks[b"data"], chunks.get(b"VOXT")
+
+
+def verify_file(data, circle, pinned, ed25519_verify):
+    """Independent verifier written from the spec text. Returns
+    (check, reason, modified_chunks, content_matches); raises WavRejected."""
+    channels, rate, pcm, manifest = parse_wav(data)
+    n_frames = len(pcm) // (channels * 2)
+    if manifest is None:
+        return "absent", "no_manifest", [], False
+    bad = ("invalid", "malformed", [], False)
+    if len(manifest) < 46 or manifest[:4] != b"VOXT":
+        return bad
+    if manifest[4] != 0:
+        return "invalid", "unsupported_version", [], False
+    mode = manifest[5]
+    if mode not in (0, 1):
+        return bad
+    key_id, _created, _counter, m_rate, m_channels, m_bits, m_frames, chunk_frames, n_chunks = \
+        struct.unpack(">IQIIHHQII", manifest[6:46])
+    if chunk_frames == 0 or n_chunks == 0 or n_chunks > 1 << 20:
+        return bad
+    if n_chunks != -(-m_frames // chunk_frames):
+        return bad
+    signed_len = 46 + 32 * n_chunks
+    auth_len = 32 if mode == 0 else 96
+    if len(manifest) != signed_len + auth_len:
+        return bad
+    signed, tail = manifest[:signed_len], manifest[signed_len:]
+    if mode == 0:
+        if circle is None or circle[0] != key_id:
+            return "unknown_key", "untrusted_key", [], False
+        expected = hmac.new(circle[1], DOMAIN_FILE_CIRCLE + signed, hashlib.sha256).digest()
+        if not hmac.compare_digest(expected, tail):
+            return "invalid", "bad_authenticator", [], False
+        trusted = True
+    else:
+        key, signature = tail[:32], tail[32:]
+        if int.from_bytes(hashlib.sha256(key).digest()[:4], "big") != key_id:
+            return bad
+        if not ed25519_verify(key, signature, DOMAIN_FILE_PUBLIC + signed):
+            return "invalid", "bad_signature", [], False
+        trusted = pinned == key
+    format_ok = (m_rate, m_channels, m_bits, m_frames) == (rate, channels, 16, n_frames)
+    modified, digests_ok = [], False
+    if format_ok:
+        actual = chunk_digests(pcm, channels, chunk_frames)
+        declared = [manifest[46 + 32 * i:78 + 32 * i] for i in range(n_chunks)]
+        modified = [i for i, (a, b) in enumerate(zip(actual, declared)) if a != b]
+        digests_ok = not modified and len(actual) == n_chunks
+    matches = format_ok and digests_ok
+    if not trusted:
+        return "unknown_key", "untrusted_key", modified, matches
+    if not format_ok:
+        return "invalid", "format_changed", modified, matches
+    if digests_ok:
+        return "valid", "none", [], True
+    return "invalid", "modified", modified, False
+
+
+def check_negative_vectors(vectors, ed25519_verify):
+    for v in vectors:
+        name = "negative " + v["name"]
+        t = v["trust"]
+        circle = None
+        if t["circle_key"] is not None:
+            circle = (t["circle_key_id"], bytes.fromhex(t["circle_key"]))
+        pinned = bytes.fromhex(t["pinned_public"]) if t["pinned_public"] else None
+        expected = v["expected"]
+        try:
+            got = verify_file(bytes.fromhex(v["wav"]), circle, pinned, ed25519_verify)
+        except WavRejected as error:
+            check(expected == {"error": str(error)}, f"{name}: rejected as {error}, expected {expected}")
+            continue
+        want = (expected.get("check"), expected.get("reason"),
+                expected.get("modified_chunks"), expected.get("content_matches"))
+        check(got == want, f"{name}: got {got}, expected {want}")
+        check(got[0] != "valid", f"{name}: a negative vector verified")
+
+
 def check_file_vectors(strict):
     try:
         from cryptography.exceptions import InvalidSignature
@@ -129,7 +238,22 @@ def check_file_vectors(strict):
         else:
             print("warning: 'cryptography' unavailable; Ed25519 checks skipped", file=sys.stderr)
 
-    for case in load("file-v0.json")["cases"]:
+    data = load("file-v0.json")
+    if have_ed25519:
+        def ed25519_verify(public, signature, message):
+            try:
+                Ed25519PublicKey.from_public_bytes(public).verify(signature, message)
+                return True
+            except (InvalidSignature, ValueError):
+                return False
+        check_negative_vectors(data["negative"], ed25519_verify)
+    else:
+        # Without Ed25519 only the vectors that never reach a signature check can run.
+        offline = [v for v in data["negative"] if v["trust"]["pinned_public"] is None
+                   and not v["name"].startswith("public-")]
+        check_negative_vectors(offline, None)
+
+    for case in data["cases"]:
         name = case["name"]
         channels, rate, chunk_frames = case["channels"], case["sample_rate"], case["chunk_frames"]
         pcm = struct.pack("<%dh" % len(case["samples"]), *case["samples"])
