@@ -33,9 +33,11 @@ KEYS
   `keygen` protects the key with a passphrase (Argon2id, 64 MiB, then XChaCha20-Poly1305)
   unless --plain is given, which writes 64 hex characters instead. `protect` turns a plain
   key file into a protected one. Commands that read a key accept both forms.
-  The passphrase comes from --passphrase-file (its first line), else from the environment
-  variable VOX_TRUST_PASSPHRASE, else from a prompt on the terminal (no echo).
-  New key files are created with mode 0600 and never overwrite a file. Key files are read
+  The passphrase comes from --passphrase-file (its first line; `-` reads standard input,
+  and a pipe works too), else from the environment variable VOX_TRUST_PASSPHRASE, else
+  from a prompt on the terminal (no echo). The environment variable is visible to other
+  processes of the same user; prefer a file or a pipe in scripts.
+  New key files never overwrite a file; on Unix they are created with mode 0600. Key files are read
   only if they are regular files of at most 4 KiB; WAV inputs must be regular files of at
   most 512 MiB.
 
@@ -49,8 +51,13 @@ EXIT CODES (verify)
   0 verified   1 unsealed   2 warning   3 alert
   Exit code 1 is NOT an error and NOT a pass: the file has no seal, or its seal is under a
   key you did not supply, so nothing was verified. Treat only 0 as verified.
-  64 usage error   65 not a readable WAV file or key file (or too large)
+  64 usage error (including an option given twice)
+  65 not a readable WAV file or key file (or too large)
   66 cannot read an input   73 cannot write output   77 wrong passphrase
+
+COUNTER
+  --counter is stored in the manifest and authenticated, but in file mode it is only
+  informational (spec section 6.2). If you keep a count per key, pass the next value.
 
 NOTE
   Seals survive only bit-exact copies. Re-encoding (MP3, AAC, resampling, re-recording)
@@ -102,6 +109,9 @@ impl Args {
                 positional.push(arg.clone());
                 continue;
             };
+            if name != "help" && options.iter().any(|(n, _): &(String, _)| n == name) {
+                return Err(usage(format!("--{name} was given more than once")));
+            }
             if name == "help" || switches.contains(&name) {
                 options.push((name.to_string(), None));
             } else {
@@ -178,16 +188,33 @@ const KEY_FILE_CAP: u64 = 4 * 1024;
 const WAV_CAP: u64 = 512 * 1024 * 1024;
 
 /// Reads a regular file, refusing anything else (devices, FIFOs, directories) and anything
-/// larger than `cap` bytes. The read itself is bounded, so a file that grows is still capped.
+/// larger than `cap` bytes.
 fn read_bounded(path: &Path, cap: u64, what: &str) -> Result<Vec<u8>> {
+    read_capped(path, cap, what, false)
+}
+
+/// Reads at most `cap` bytes. Only regular files are accepted, unless `streams`, which also
+/// allows pipes and character devices (`--passphrase-file <(...)`). The type is checked on
+/// the opened file, so the path cannot be swapped after the check, and on Unix a file-only
+/// open does not block, so a FIFO swapped in cannot hang it. The read itself is bounded, so
+/// a file that grows is still capped.
+fn read_capped(path: &Path, cap: u64, what: &str, streams: bool) -> Result<Vec<u8>> {
     let unreadable = |e: std::io::Error| {
         Failure(
             EX_NOINPUT,
             format!("cannot read {what} {}: {e}", path.display()),
         )
     };
-    let meta = fs::metadata(path).map_err(unreadable)?;
-    if !meta.is_file() {
+    let mut options = fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    if !streams {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(libc::O_NONBLOCK);
+    }
+    let file = options.open(path).map_err(unreadable)?;
+    let meta = file.metadata().map_err(unreadable)?;
+    if !(meta.is_file() || (streams && is_stream(&meta.file_type()))) {
         return Err(Failure(
             EX_NOINPUT,
             format!("{what} {} is not a regular file", path.display()),
@@ -202,19 +229,28 @@ fn read_bounded(path: &Path, cap: u64, what: &str) -> Result<Vec<u8>> {
             ),
         )
     };
-    if meta.len() > cap {
+    if meta.is_file() && meta.len() > cap {
         return Err(too_big());
     }
-    let mut out = Vec::with_capacity(usize::try_from(meta.len()).unwrap_or(0) + 1);
-    fs::File::open(path)
-        .map_err(unreadable)?
-        .take(cap + 1)
+    let mut out = Vec::with_capacity(usize::try_from(meta.len().min(cap)).unwrap_or(0) + 1);
+    file.take(cap + 1)
         .read_to_end(&mut out)
         .map_err(unreadable)?;
     if out.len() as u64 > cap {
         return Err(too_big());
     }
     Ok(out)
+}
+
+#[cfg(unix)]
+fn is_stream(kind: &fs::FileType) -> bool {
+    use std::os::unix::fs::FileTypeExt;
+    kind.is_fifo() || kind.is_char_device()
+}
+
+#[cfg(not(unix))]
+fn is_stream(_: &fs::FileType) -> bool {
+    false
 }
 
 /// A file holding 64 hex characters (a plain key, or a public key to pin).
@@ -235,11 +271,20 @@ const PASSPHRASE_ENV: &str = "VOX_TRUST_PASSPHRASE";
 /// (twice when `confirm`, for a new key).
 fn passphrase(args: &Args, prompt: &str, confirm: bool) -> Result<Zeroizing<String>> {
     let text = if let Some(file) = args.get_os("passphrase-file") {
-        let bytes = Zeroizing::new(read_bounded(
-            Path::new(file),
-            KEY_FILE_CAP,
-            "passphrase file",
-        )?);
+        let bytes = Zeroizing::new(if file == "-" {
+            let mut out = Vec::new();
+            io::stdin()
+                .lock()
+                .take(KEY_FILE_CAP + 1)
+                .read_to_end(&mut out)
+                .map_err(|e| Failure(EX_NOINPUT, format!("cannot read the passphrase: {e}")))?;
+            if out.len() as u64 > KEY_FILE_CAP {
+                return Err(Failure(EX_DATAERR, "the passphrase is too long".into()));
+            }
+            out
+        } else {
+            read_capped(Path::new(file), KEY_FILE_CAP, "passphrase file", true)?
+        });
         let text = std::str::from_utf8(&bytes)
             .map_err(|_| Failure(EX_DATAERR, "the passphrase file must be UTF-8".into()))?;
         Zeroizing::new(text.lines().next().unwrap_or("").to_string())
@@ -280,14 +325,16 @@ fn read_secret_key(path: &Path, args: &Args) -> Result<Zeroizing<[u8; 32]>> {
     if !keyfile::is_protected(text) {
         return read_hex_file(path, "key file");
     }
-    let pass = passphrase(args, &format!("Passphrase for {}: ", path.display()), false)?;
-    keyfile::open(text, pass.as_bytes()).map_err(|e| {
+    let failed = |e: keyfile::KeyFileError| {
         let code = match e {
             keyfile::KeyFileError::WrongPassphrase => EX_NOPERM,
             _ => EX_DATAERR,
         };
         Failure(code, format!("{}: {e}", path.display()))
-    })
+    };
+    keyfile::check(text).map_err(failed)?;
+    let pass = passphrase(args, &format!("Passphrase for {}: ", path.display()), false)?;
+    keyfile::open(text, pass.as_bytes()).map_err(failed)
 }
 
 /// Creates a new key file (mode 0600, never replacing a file) holding `text`.
@@ -354,15 +401,28 @@ fn write_atomic(output: &Path, data: &[u8], force: bool) -> io::Result<()> {
         Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
         _ => PathBuf::from("."),
     };
-    let mut name = OsString::from(".vox-trust-");
-    name.push(output.file_name().unwrap_or_else(|| OsStr::new("out")));
-    name.push(format!(".{}.tmp", std::process::id()));
-    let tmp = dir.join(name);
+    // A random name, so nobody can block sealing by creating the name in advance.
+    let (tmp, mut file) = (|| {
+        for _ in 0..16 {
+            let mut suffix = [0u8; 8];
+            getrandom::fill(&mut suffix).map_err(io::Error::other)?;
+            let mut name = OsString::from(".vox-trust-");
+            name.push(output.file_name().unwrap_or_else(|| OsStr::new("out")));
+            name.push(format!(".{}.tmp", to_hex(&suffix)));
+            let tmp = dir.join(name);
+            match fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&tmp)
+            {
+                Ok(file) => return Ok((tmp, file)),
+                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+                Err(e) => return Err(e),
+            }
+        }
+        Err(io::Error::other("could not create a temporary file"))
+    })()?;
     let result = (|| {
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&tmp)?;
         file.write_all(data)?;
         if force {
             if let Ok(meta) = fs::metadata(output) {
@@ -526,11 +586,12 @@ fn cmd_seal(args: &Args) -> Result<()> {
             ),
         ));
     }
-    let key = read_secret_key(Path::new(key_path), args)?;
+    // The audio first: a bad input should not cost a passphrase prompt and 64 MiB of Argon2.
     let bytes = read_file(input)?;
     let rate = wav::parse(&bytes)
         .map_err(|e| Failure(EX_DATAERR, format!("{}: {e}", input.display())))?
         .sample_rate;
+    let key = read_secret_key(Path::new(key_path), args)?;
     let chunk_frames = (seconds * f64::from(rate))
         .round()
         .clamp(1.0, f64::from(u32::MAX)) as u32;
@@ -636,17 +697,6 @@ fn cmd_verify(args: &Args) -> Result<u8> {
     args.check_known(&["circle-key", "pin", "contact", "json", "passphrase-file"])?;
     args.expect_positional(1, "verify FILE.wav")?;
     let path = Path::new(&args.positional[0]);
-    let circle_key = args
-        .get_os("circle-key")
-        .map(|p| read_secret_key(Path::new(p), args))
-        .transpose()?;
-    let pinned: Option<[u8; 32]> = match args.get_os("pin") {
-        None => None,
-        Some(value) => Some(match value.to_str().and_then(parse_hex32) {
-            Some(key) => *key,
-            None => *read_hex_file(Path::new(value), "public key file")?,
-        }),
-    };
     let contact = match args.get("contact")?.unwrap_or("stranger") {
         "stranger" => None,
         "always" => Some(ContactState {
@@ -660,7 +710,20 @@ fn cmd_verify(args: &Args) -> Result<u8> {
         _ => return Err(usage("--contact must be stranger, always or strict")),
     };
 
+    // The audio before the key: a bad input should not cost a passphrase prompt.
     let bytes = read_file(path)?;
+    let circle_key = args
+        .get_os("circle-key")
+        .map(|p| read_secret_key(Path::new(p), args))
+        .transpose()?;
+    let pinned: Option<[u8; 32]> = match args.get_os("pin") {
+        None => None,
+        Some(value) => Some(match value.to_str().and_then(parse_hex32) {
+            Some(key) => *key,
+            None => *read_hex_file(Path::new(value), "public key file")?,
+        }),
+    };
+
     let trust = Trust {
         circle: circle_key.as_ref().map(|k| (circle::key_id(k), &**k)),
         pinned_public: pinned.as_ref(),

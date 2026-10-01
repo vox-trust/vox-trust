@@ -361,11 +361,16 @@ impl Header {
     }
 
     fn decode(b: &[u8]) -> Result<Header, Reason> {
-        if b.len() < HEADER_LEN || b[0..4] != MAGIC {
+        if b.len() < 5 || b[0..4] != MAGIC {
             return Err(Reason::Malformed);
         }
+        // The version comes before any other check, so a newer, differently sized format
+        // reads as unsupported rather than malformed (spec section 13).
         if b[4] != FILE_VERSION {
             return Err(Reason::UnsupportedVersion);
+        }
+        if b.len() < HEADER_LEN {
+            return Err(Reason::Malformed);
         }
         let mode = Mode::from_bits(b[5]).map_err(|_| Reason::Malformed)?;
         let u32_at = |i: usize| u32::from_be_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]]);
@@ -1082,6 +1087,9 @@ mod tests {
         assert_eq!(Header::decode(&at_limit.encode()), Ok(at_limit.clone()));
         let short = &at_limit.encode()[..HEADER_LEN - 1];
         assert_eq!(Header::decode(short), Err(Reason::Malformed));
+        // A different version is unsupported whatever its length.
+        assert_eq!(Header::decode(b"VOXT\x01"), Err(Reason::UnsupportedVersion));
+        assert_eq!(Header::decode(b"VOXT"), Err(Reason::Malformed));
         // One chunk over the limit, even when consistent with the frame count.
         let over = header((max + 1) * 3, 3, MAX_CHUNKS + 1);
         assert_eq!(Header::decode(&over.encode()), Err(Reason::Malformed));

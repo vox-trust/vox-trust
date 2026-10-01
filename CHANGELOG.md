@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows [Kee
 Closing the code side before an outside audit: format decisions, protected keys, and tests that check the tests.
 
 ### Added
-- **Protected key files.** `vox-trust keygen` protects the secret with a passphrase by default: Argon2id (RFC 9106 second recommended option: 64 MiB, 3 passes, 4 lanes) and XChaCha20-Poly1305, with the parameters, salt and nonce authenticated. `--passphrase-file` or `VOX_TRUST_PASSPHRASE` for scripts, `--plain` for an unprotected key, and `vox-trust protect` to convert an existing plain key. A wrong passphrase exits with code 77. The known-answer vector was produced by a separate Python implementation (argon2-cffi, pycryptodome), not by the Rust code it tests.
+- **Protected key files.** `vox-trust keygen` protects the secret with a passphrase by default: Argon2id (RFC 9106 second recommended option: 64 MiB, 3 passes, 4 lanes) and XChaCha20-Poly1305, with the parameters, salt and nonce authenticated. `--passphrase-file` or `VOX_TRUST_PASSPHRASE` for scripts, `--plain` for an unprotected key, and `vox-trust protect` to convert an existing plain key. A wrong passphrase exits with code 77. The known-answer vector is rebuilt in CI by a separate Python implementation (`tools/keyfile_kat.py`, with argon2-cffi and pycryptodome), not by the Rust code it tests. `--passphrase-file -` reads the passphrase from standard input, and a pipe works too. A protected key is checked before the passphrase is asked for, the key derived from the passphrase is wiped from memory, and blank lines around a key are accepted.
 - Specification section 13, *Versioning, stability and registries*: which changes need a new version, and a registry of every identifier (format version, modes, chunk ID, domain strings, pairing prefix, carrier name).
 - `coarse_time()` and `replay::DEFAULT_SKEW_MINUTES` in `vox-trust-core`.
 - **Tests that check the tests:** line coverage with a floor of 96 % (`scripts/coverage.sh`); mutation testing of the core and the key-file code (`cargo mutants`, new workflow), where every surviving mutant was killed by a new test or, if it cannot change behaviour, listed with the reason in `.cargo/mutants.toml`; CI on macOS and Windows; the browser demo tested in Firefox and WebKit as well as Chromium; `cargo deny` for advisories, licenses and sources.
@@ -19,6 +19,11 @@ Closing the code side before an outside audit: format decisions, protected keys,
 - **Breaking for scripts:** `keygen` now asks for a passphrase unless `--plain`, `--passphrase-file` or `VOX_TRUST_PASSPHRASE` is given.
 
 ### Fixed
+- CLI: an option given twice (`--mode circle --mode public`) is now an error; before, the first value was used silently.
+- CLI: `seal` uses a random temporary name, so a file planted at a predictable name can no longer block it, or make it claim the output already exists.
+- CLI: input files are opened first and then checked, so a path swapped for a FIFO cannot hang the program; the audio is read before the key, so a bad input costs no passphrase prompt.
+- A manifest with another format version now reads as `unsupported_version` whatever its length (it read as `malformed` when shorter than a version-0 header).
+- README: the trust policy has four outcomes, including **Warning**.
 - `ReplayGuard::default()` allowed a clock skew of 0 minutes, so it accepted only seals stamped in the verifier's current minute. It now uses the 10-minute default.
 
 ## [0.3.0] - 2026-10-01

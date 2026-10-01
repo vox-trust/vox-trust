@@ -626,3 +626,96 @@ fn plain_and_passphrase_file_conflict() {
     assert_eq!(code(&out), 64);
     assert!(fs::metadata(&key).is_err(), "nothing written");
 }
+
+#[test]
+fn an_option_given_twice_is_an_error() {
+    let dir = Dir::new();
+    let key = keygen(&dir, "k.key");
+    let (clip, sealed) = (dir.path("a.wav"), dir.path("s.wav"));
+    write_clip(&clip);
+    let out = run(&[
+        "seal", &clip, &sealed, "--mode", "circle", "--mode", "public", "--key", &key,
+    ]);
+    assert_eq!(code(&out), 64);
+    assert!(err(&out).contains("more than once"), "{}", err(&out));
+    assert!(fs::metadata(&sealed).is_err(), "nothing written");
+    let out = run(&[
+        "verify",
+        &clip,
+        "--contact",
+        "strict",
+        "--contact",
+        "stranger",
+    ]);
+    assert_eq!(code(&out), 64);
+}
+
+fn run_with_stdin(args: &[&str], input: &str) -> Output {
+    use std::io::Write;
+    use std::process::Stdio;
+    let mut child = Command::new(env!("CARGO_BIN_EXE_vox-trust"))
+        .args(args)
+        .env_remove("VOX_TRUST_PASSPHRASE")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(input.as_bytes())
+        .unwrap();
+    child.wait_with_output().unwrap()
+}
+
+#[test]
+fn the_passphrase_can_come_from_a_pipe() {
+    let dir = Dir::new();
+    let key = dir.path("p.key");
+    let out = run_with_stdin(&["keygen", &key, "--passphrase-file", "-"], "piped pw\n");
+    assert_eq!(code(&out), 0, "{}", err(&out));
+    assert_eq!(code(&run_with_passphrase(&["pubkey", &key], "piped pw")), 0);
+    #[cfg(unix)]
+    {
+        let out = run_with_stdin(
+            &["pubkey", &key, "--passphrase-file", "/dev/stdin"],
+            "piped pw",
+        );
+        assert_eq!(code(&out), 0, "{}", err(&out));
+    }
+}
+
+#[test]
+fn a_protected_key_is_checked_before_the_passphrase_is_asked() {
+    let dir = Dir::new();
+    let key = dir.path("p.key");
+    assert_eq!(code(&run_with_passphrase(&["keygen", &key], "pw")), 0);
+    let content = fs::read_to_string(&key).unwrap();
+    // Blank lines and spaces around the key, as an editor might leave them, are fine.
+    let padded = dir.path("padded.key");
+    fs::write(&padded, format!("\n  {}  \n", content.trim())).unwrap();
+    assert_eq!(code(&run_with_passphrase(&["pubkey", &padded], "pw")), 0);
+    // A damaged header is reported at once (65), without asking for a passphrase: with no
+    // terminal and no passphrase given, asking would have been a usage error (64).
+    let damaged = dir.path("damaged.key");
+    fs::write(&damaged, content.replace("m=65536,", "m=065536,")).unwrap();
+    let out = run(&["pubkey", &damaged]);
+    assert_eq!(code(&out), 65, "{}", err(&out));
+}
+
+#[cfg(unix)]
+#[test]
+fn a_fifo_in_place_of_a_file_is_refused_without_hanging() {
+    let dir = Dir::new();
+    let fifo = dir.path("fifo.wav");
+    assert!(Command::new("mkfifo")
+        .arg(&fifo)
+        .status()
+        .unwrap()
+        .success());
+    let out = run(&["verify", &fifo]);
+    assert_eq!(code(&out), 66);
+    assert!(err(&out).contains("not a regular file"), "{}", err(&out));
+}

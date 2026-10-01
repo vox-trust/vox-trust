@@ -41,12 +41,13 @@ En lugar de adivinar si una voz es falsa, comprueba si una voz real fue **sellad
 
 1. **Sellar.** El dispositivo de quien habla firma el audio en el origen.
 2. **Verificar.** Cualquiera que tenga el protocolo comprueba qué clave lo selló, cuándo, y qué fragmentos del audio fueron alterados.
-3. **Decidir.** Una política de confianza local convierte el resultado en uno de tres desenlaces.
+3. **Decidir.** Una política de confianza local convierte el resultado en uno de cuatro desenlaces.
 
 | Resultado | Significado |
 |---|---|
 | **Verificado** | Un sello válido de una clave en la que confías. |
-| **Sin sello** | No hay sello, de alguien que nunca usó el protocolo. Neutral, **no** es "falso". |
+| **Sin sello** | No hay sello (o hay un sello de una clave que nunca proporcionaste), de alguien de quien no esperas nada. Neutral, **no** es "falso". |
+| **Advertencia** | Falta el sello de un contacto que *siempre* sella: merece una segunda mirada, porque la compresión también puede eliminar un sello. |
 | **Alerta** | El sello está roto, proviene de una clave que no fijaste para ese contacto, o falta en un contacto que *siempre* sella (modo estricto). |
 
 Dos modos: **círculo** (personas que se conocen, secreto compartido) y **público** (organizaciones y figuras públicas, claves Ed25519 que los verificadores fijan).
@@ -107,7 +108,7 @@ Los atacantes, las afirmaciones y las debilidades encontradas hasta ahora (inclu
 | Navegador real | La página de la demo en Chromium, Firefox y WebKit headless: sellado, seis ataques, fijación de clave pública, accesibilidad, ancho de teléfono, modo oscuro | `BROWSER=firefox node tests/browser/demo.mjs` |
 | Fuzzing | Todo parser de entrada no confiable, con invariantes (el audio sellado siempre verifica, cualquier bit de muestra alterado se detecta en el fragmento correcto, el texto de emparejamiento tiene una sola forma) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
 | Cobertura | Proporción de líneas de Rust que ejecutan las pruebas; la CI falla por debajo del 96 % | `scripts/coverage.sh` |
-| Pruebas de mutación | Cambia operadores y valores de retorno de `vox-trust-core` y del código de archivos de clave, uno a la vez, y comprueba que alguna prueba falla; los pocos cambios que no pueden alterar el comportamiento están listados con el motivo en `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core` |
+| Pruebas de mutación | Cambia operadores y valores de retorno de `vox-trust-core` y del código de archivos de clave, uno a la vez, y comprueba que alguna prueba falla; los pocos cambios que no pueden alterar el comportamiento están listados con el motivo en `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core`; `cargo mutants -p vox-trust-cli -f crates/vox-trust-cli/src/keyfile.rs` |
 | Dependencias | Vulnerabilidades conocidas, licencias, orígenes | `cargo deny check` |
 
 La CI ejecuta las pruebas de Rust en Linux, macOS y Windows.

@@ -1,4 +1,4 @@
-# Vox Trust Protocol: specification (DRAFT 0.1)
+# Vox Trust Protocol: specification (DRAFT 0.2)
 
 > **Status: draft 0.2, unreviewed by anyone but the author.** It specifies **file mode** completely, with a reference implementation and test vectors; the version-0 file-mode format is a **release candidate**: frozen unless a review finds a flaw, and any incompatible change will get a new version number (section 13). An **experimental in-band carrier** (an audio watermark meant to let a seal survive re-encoding) is built and measured (section 10.2) but did not pass the gate for use, and in-band seals are not bound to the audio (10.3). Nothing here is a security guarantee. Every item marked *TBD* is genuinely undecided.
 

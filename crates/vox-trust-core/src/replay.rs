@@ -1,4 +1,4 @@
-//! Verifier-side helpers: replay detection and failure rate limiting (draft spec, section 6).
+//! Verifier-side helpers: replay detection and failure rate limiting (spec sections 4 and 5).
 //!
 //! These are policy helpers, not cryptography. They take the clock as an argument so they
 //! are deterministic and testable.

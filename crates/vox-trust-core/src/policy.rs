@@ -1,4 +1,4 @@
-//! The trust-policy decision table (draft spec, section 7).
+//! The trust-policy decision table (spec section 8).
 
 use core::fmt;
 

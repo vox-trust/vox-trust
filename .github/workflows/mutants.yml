@@ -11,6 +11,7 @@ on:
       - "crates/vox-trust-core/**"
       - "crates/vox-trust-cli/src/keyfile.rs"
       - ".cargo/mutants.toml"
+      - ".github/workflows/mutants.yml"
   schedule:
     - cron: "41 5 * * 1"
   workflow_dispatch:

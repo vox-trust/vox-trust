@@ -98,8 +98,9 @@ jobs:
           python-version: "3.12"
       - name: Independent re-implementation of the test vectors (Python)
         run: |
-          pip install cryptography
+          pip install cryptography argon2-cffi pycryptodome
           python3 tools/check_vectors.py --strict
+          python3 tools/keyfile_kat.py
       - name: Build the WebAssembly core
         run: scripts/build-web.sh
       - name: WebAssembly end-to-end tests (Node)

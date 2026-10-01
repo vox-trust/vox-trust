@@ -17,7 +17,7 @@
 
 use argon2::{Algorithm, Argon2, Params, Version};
 use chacha20poly1305::aead::{Aead, Payload};
-use chacha20poly1305::{Key, KeyInit, XChaCha20Poly1305, XNonce};
+use chacha20poly1305::{KeyInit, XChaCha20Poly1305, XNonce};
 use zeroize::Zeroizing;
 
 const PREFIX: &str = "vox-trust-key:1:argon2id:";
@@ -111,6 +111,11 @@ fn derive(
     Ok(out)
 }
 
+/// The cipher for a derived key; it wipes its copy of the key when dropped.
+fn cipher(key: &[u8; 32]) -> XChaCha20Poly1305 {
+    XChaCha20Poly1305::new(key.into())
+}
+
 /// Seals `secret` under `passphrase`, with the given salt and nonce (callers pass random
 /// values; tests pass fixed ones).
 pub fn protect(
@@ -129,8 +134,7 @@ pub fn protect(
         hex(&salt),
         hex(&nonce)
     );
-    let cipher = XChaCha20Poly1305::new(&Key::from(*key));
-    let sealed = cipher
+    let sealed = cipher(&key)
         .encrypt(
             &XNonce::from(nonce),
             Payload {
@@ -162,9 +166,17 @@ fn parse_cost(text: &str) -> Option<Cost> {
     parts.next().is_none().then_some(cost)
 }
 
-/// Opens a protected key.
-pub fn open(text: &str, passphrase: &[u8]) -> Result<Zeroizing<[u8; 32]>, KeyFileError> {
-    let line = text.trim_end_matches(['\n', '\r']);
+/// The fields of a protected key, checked but not yet decrypted.
+struct Parsed<'a> {
+    header: &'a str,
+    cost: Cost,
+    salt: [u8; 16],
+    nonce: [u8; 24],
+    sealed: [u8; 48],
+}
+
+fn parse(text: &str) -> Result<Parsed<'_>, KeyFileError> {
+    let line = text.trim();
     let rest = line.strip_prefix(PREFIX).ok_or(KeyFileError::Malformed)?;
     let fields: Vec<&str> = rest.split(':').collect();
     let [cost, salt, nonce, sealed] = fields[..] else {
@@ -174,19 +186,32 @@ pub fn open(text: &str, passphrase: &[u8]) -> Result<Zeroizing<[u8; 32]>, KeyFil
     if !cost.is_supported() {
         return Err(KeyFileError::UnsupportedCost);
     }
-    let salt: [u8; 16] = unhex(salt).ok_or(KeyFileError::Malformed)?;
-    let nonce: [u8; 24] = unhex(nonce).ok_or(KeyFileError::Malformed)?;
-    let sealed: [u8; 48] = unhex(sealed).ok_or(KeyFileError::Malformed)?;
-    let header = &line[..line.len() - 96];
-    let key = derive(passphrase, &salt, cost)?;
-    let cipher = XChaCha20Poly1305::new(&Key::from(*key));
+    Ok(Parsed {
+        header: &line[..line.len() - sealed.len()],
+        cost,
+        salt: unhex(salt).ok_or(KeyFileError::Malformed)?,
+        nonce: unhex(nonce).ok_or(KeyFileError::Malformed)?,
+        sealed: unhex(sealed).ok_or(KeyFileError::Malformed)?,
+    })
+}
+
+/// Checks a protected key's format and parameters without the passphrase, so a damaged
+/// file is reported before anyone is asked for one.
+pub fn check(text: &str) -> Result<(), KeyFileError> {
+    parse(text).map(|_| ())
+}
+
+/// Opens a protected key.
+pub fn open(text: &str, passphrase: &[u8]) -> Result<Zeroizing<[u8; 32]>, KeyFileError> {
+    let p = parse(text)?;
+    let key = derive(passphrase, &p.salt, p.cost)?;
     let plain = Zeroizing::new(
-        cipher
+        cipher(&key)
             .decrypt(
-                &XNonce::from(nonce),
+                &XNonce::from(p.nonce),
                 Payload {
-                    msg: &sealed,
-                    aad: header.as_bytes(),
+                    msg: &p.sealed,
+                    aad: p.header.as_bytes(),
                 },
             )
             .map_err(|_| KeyFileError::WrongPassphrase)?,

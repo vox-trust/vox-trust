@@ -39,12 +39,13 @@ Instead of guessing whether a voice is fake, check whether a real one was **seal
 
 1. **Seal.** The speaker's device signs the audio at the source.
 2. **Verify.** Anyone with the protocol checks which key sealed it, when, and which chunks of audio were altered.
-3. **Decide.** A local trust policy turns the result into one of three outcomes.
+3. **Decide.** A local trust policy turns the result into one of four outcomes.
 
 | Outcome | Meaning |
 |---|---|
 | **Verified** | A valid seal from a key you trust. |
-| **Unsealed** | No seal, from someone who never used the protocol. Neutral, **not** "fake". |
+| **Unsealed** | No seal (or a seal under a key you never supplied), from someone you have no expectations of. Neutral, **not** "fake". |
+| **Warning** | No seal from a contact who *always* seals: worth a second look, since compression can also remove a seal. |
 | **Alert** | The seal is broken, comes from a key you didn't pin for that contact, or is missing from a contact who *always* seals (strict mode). |
 
 Two modes: **circle** (people who know each other, shared secret) and **public** (organisations and public figures, Ed25519 keys that verifiers pin).
@@ -105,7 +106,7 @@ Attackers, claims and the weaknesses found so far (including one that is still u
 | Real browser | The demo page in headless Chromium, Firefox and WebKit: sealing, six attacks, public-key pinning, five languages, accessibility, phone width, dark mode | `BROWSER=firefox node tests/browser/demo.mjs` |
 | Fuzzing | Every parser of untrusted input, with invariants (sealed audio always verifies, any flipped sample bit is found in the right chunk, pairing text has one form) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
 | Coverage | Share of Rust lines the tests execute; CI fails below 96 % | `scripts/coverage.sh` |
-| Mutation testing | Changes operators and return values in `vox-trust-core` and the key-file code, one at a time, and checks that a test fails; the few changes that cannot alter behaviour are listed with the reason in `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core` |
+| Mutation testing | Changes operators and return values in `vox-trust-core` and the key-file code, one at a time, and checks that a test fails; the few changes that cannot alter behaviour are listed with the reason in `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core`; `cargo mutants -p vox-trust-cli -f crates/vox-trust-cli/src/keyfile.rs` |
 | Dependencies | Known vulnerabilities, licenses, sources | `cargo deny check` |
 
 CI runs the Rust tests on Linux, macOS and Windows.
