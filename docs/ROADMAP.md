@@ -2,15 +2,19 @@
 
 An honest plan with the gates that decide whether to continue. No dates are promised: this is a part-time, early project.
 
-Legend: ✅ done · ⬜ not started
+Legend: ✅ done · 🟡 partly done · ⬜ not started
 
-## Where we are
+## Where we are (v0.1.0)
 
-- ✅ Draft specification 0.0: seal layout, modes, trust policy, open questions ([spec/SPEC.md](../spec/SPEC.md))
-- ✅ Draft threat model ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
-- ✅ `vox-trust-core`: 102-bit seal packing and the trust-policy decision table, with tests; CI running
-- ✅ Website in English and Portuguese, no trackers
-- ⬜ Everything below
+- ✅ Specification draft 0.1: file mode fully specified, in-band seal and carrier interface as draft ([spec/SPEC.md](../spec/SPEC.md))
+- ✅ Threat model draft 0.1, including the author's own adversarial findings ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
+- ✅ `vox-trust-core`: seal layout, circle and public modes, **file mode**, trust policy, replay and rate-limit helpers, pairing text
+- ✅ Published test vectors, and an independent Python re-implementation of them
+- ✅ `vox-trust` command-line tool
+- ✅ WebAssembly build and a **browser demo that really verifies** (file mode), tested in a real browser
+- ✅ Website in English and Portuguese
+- ⬜ **The audio watermark carrier. Without it, seals survive only bit-exact copies.**
+- ⬜ Independent review, independent implementation, and everything that depends on other people
 
 ## Principles
 
@@ -20,7 +24,7 @@ Legend: ✅ done · ⬜ not started
 4. **Claims must match the threat model.** If a sentence says "proves" or "guarantees", it needs an entry there.
 5. **Adoption means independent implementations and integrations**, not star counts.
 
-## Phase 0: measure first
+## Phase 0: measure first (not started: needs a carrier)
 
 Conditions to test, per carrier backend and payload size:
 
@@ -34,46 +38,46 @@ Metrics: bit error rate, tag verification success, false-accept rate, detection 
 
 Deliverables: a reproducible benchmark harness in this repository, published results, and a short written decision record.
 
-**Proposed gate (to be revised against the data):** continue with watermark carrying only if a backend verifies ≥ 95% of the time through Opus 24 kbit/s, AAC 64 kbit/s and MP3 128 kbit/s, and ≥ 80% through AMR-WB 12.65 kbit/s, with a false-accept rate per window no worse than the tag's 2^-32. If none does, the first release falls back to **file mode** (a sealed manifest, no watermark) and watermark carrying stays experimental.
+**Proposed gate (to be revised against the data):** continue with watermark carrying only if a backend verifies ≥ 95% of the time through Opus 24 kbit/s, AAC 64 kbit/s and MP3 128 kbit/s, and ≥ 80% through AMR-WB 12.65 kbit/s, with a false-accept rate per window no worse than the tag's 2^-32 *per candidate tested*. If none does, file mode (already built) stays the only mode and watermark carrying stays experimental.
 
 ## Phase 1: core (draft 0.1)
 
-- ⬜ Circle-mode tag (HMAC) and public-mode signature (Ed25519, COSE manifest) using reviewed crates
-- ⬜ Pairing format for circle mode (for example a QR payload) and a key store
-- ⬜ Counter, time, clock-skew and replay rules; verifier rate limiting
+- 🟡 Circle-mode tag (HMAC) and public-mode signature (Ed25519): done for file mode and for the in-band circle tag. COSE/C2PA alignment of the manifest is not done.
+- 🟡 Pairing format: text format specified and implemented. QR rendering and a key store are application work, not done.
+- ✅ Counter, time, clock-skew and replay rules; verifier rate limiting (library helpers, with tests)
 - ⬜ Carrier backend interface, a first backend, and a per-backend conformance test
-- ⬜ **Test vectors** (seal packing, tags, policy) published as plain data
-- ⬜ Command-line `sign` and `verify` for files
-- ⬜ WebAssembly build and a browser demo that **really verifies** (no mock demo)
+- ✅ **Test vectors** published as plain data, byte-exact through the Rust crate and the WebAssembly module
+- ✅ Command-line `seal` and `verify` for files
+- ✅ WebAssembly build and a browser demo that **really verifies** (no mock demo)
 - ⬜ Benchmark harness in the repository
 
-**Exit:** someone other than the author reproduces the test vectors from the specification alone.
+**Exit:** someone other than the author reproduces the test vectors from the specification alone. ⬜ (needs another person; the Python check is the author's own)
 
 ## Phase 2: review and a second implementation (draft 0.2)
 
 - ⬜ Independent review of the threat model and the cryptographic design
-- ⬜ A second implementation in another language, written from the specification
-- ⬜ Splice and replay mitigations: per-chunk commitments (public mode) and continuity checks
+- 🟡 A second implementation written from the specification: `tools/check_vectors.py` re-implements the vectors from the spec text, but by the same author. An implementation by someone else is still needed.
+- 🟡 Splice and replay mitigations: **file mode** binds every chunk digest to its index and content, and replay helpers exist. In-band seals are **not** bound to content (the copy attack, an open problem).
 - ⬜ Decisions on key discovery and key revocation
 - ⬜ Fixes for every ambiguity the second implementation exposes
 
-**Exit:** both implementations agree on all test vectors.
+**Exit:** two implementations written by different people agree on all test vectors.
 
 ## Phase 3: public release
 
-- ⬜ A release with a working demo, the benchmark results and the open threat model
+- 🟡 A release with a working demo and the open threat model: **v0.1.0 is out**, without benchmark results (there is no carrier to measure)
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
-- ⬜ Documentation: quick start, full benchmark section, install matrix
+- 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
 - ⬜ Private vulnerability reporting tested end to end
 
 **Exit:** the first outside bug reports and reviews are triaged in public.
 
 ## Phase 4: plugins and integrations
 
-- ⬜ **Browser extension:** seal the outgoing microphone stream before the encoder, verify the decoded remote audio. Known constraints: Manifest V3 content-security rules for WebAssembly, audio work in an offscreen document, no `SharedArrayBuffer` in content scripts, and insertable streams only expose *encoded* frames.
+- ⬜ **Browser extension:** seal the outgoing microphone stream before the encoder, verify the decoded remote audio. Known constraints: Manifest V3 content-security rules for WebAssembly, audio work in an offscreen document, no `SharedArrayBuffer` in content scripts, and insertable streams only expose *encoded* frames. It needs the carrier.
 - ⬜ **Desktop verifier:** local only, no network, visible "listening" indicator. Capture paths: WASAPI loopback (Windows), PipeWire/PulseAudio monitor sources (Linux), process taps or ScreenCaptureKit (macOS).
-- ⬜ **Share-sheet flow** for voice notes on mobile (manual: seal, send, verify).
-- ⬜ **Tamper localisation** shown per chunk.
+- ⬜ **Share-sheet flow** for voice notes on mobile (manual: seal, send, verify). File mode already works for this if the messenger keeps the file bit-exact (most re-encode voice notes).
+- ✅ **Tamper localisation** shown per chunk (file mode, in the demo and the CLI)
 - ⬜ Integrations with open communication tools.
 
 **Exit:** at least one integration used by someone other than the author.
@@ -114,4 +118,4 @@ A consumer app that competes with existing family code-word apps; deepfake detec
 
 ## Open questions
 
-See [spec/SPEC.md](../spec/SPEC.md), section 11.
+See [spec/SPEC.md](../spec/SPEC.md), section 13.

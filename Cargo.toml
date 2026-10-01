@@ -1,10 +1,17 @@
 [workspace]
 resolver = "2"
-members = ["crates/vox-trust-core"]
+members = ["crates/vox-trust-core", "crates/vox-trust-wasm", "crates/vox-trust-cli"]
 
 [workspace.package]
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/vox-trust/vox-trust"
 authors = ["Roger Oliveira"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

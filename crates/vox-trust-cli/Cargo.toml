@@ -1,0 +1,17 @@
+[package]
+name = "vox-trust-cli"
+description = "Command-line tool to seal and verify WAV files with the Vox Trust protocol (file mode)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[[bin]]
+name = "vox-trust"
+path = "src/main.rs"
+
+[dependencies]
+getrandom = "0.4.3"
+vox-trust-core = { path = "../vox-trust-core" }

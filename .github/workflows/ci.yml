@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   rust:
+    name: Rust (fmt, clippy, tests, vectors)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,3 +23,46 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
         run: cargo test --workspace
+
+  independent-check:
+    name: Independent vector check and WebAssembly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Independent re-implementation of the test vectors (Python)
+        run: |
+          pip install cryptography
+          python3 tools/check_vectors.py --strict
+      - name: Build the WebAssembly core
+        run: scripts/build-web.sh
+      - name: WebAssembly end-to-end tests (Node)
+        run: node --test tests/node/wasm.test.mjs
+
+  browser:
+    name: Demo in a real browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the WebAssembly core
+        run: scripts/build-web.sh
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Drive the demo page
+        run: node tests/browser/demo.mjs

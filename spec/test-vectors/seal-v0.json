@@ -1,0 +1,81 @@
+{
+  "circle_key_ids": [
+    {
+      "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "key_id": 1003525860
+    },
+    {
+      "key": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "key_id": 3413891772
+    },
+    {
+      "key": "0000000000000000000000000000000000000000000000000000000000000000",
+      "key_id": 1115267823
+    }
+  ],
+  "circle_tags": [
+    {
+      "authenticated_fields": "00000000002a000103e8",
+      "counter": 1,
+      "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "key_id": 42,
+      "name": "basic",
+      "seal_bytes": "00000000a800040fa238fdaa28",
+      "tag": 2386520714,
+      "time": 1000
+    },
+    {
+      "authenticated_fields": "0000ffffffffffffffff",
+      "counter": 65535,
+      "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "key_id": 4294967295,
+      "name": "wrapped-counter",
+      "seal_bytes": "03fffffffffffffffeae4ae3f4",
+      "tag": 2878519549,
+      "time": 65535
+    },
+    {
+      "authenticated_fields": "00000000000000000000",
+      "counter": 0,
+      "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "key_id": 0,
+      "name": "zero",
+      "seal_bytes": "000000000000000003eebd3190",
+      "tag": 4222569572,
+      "time": 0
+    }
+  ],
+  "description": "Vox Trust seal vectors, draft 0.1. All keys in this file are public test values: NEVER use them to protect anything. Circle tag = first 4 bytes of HMAC-SHA-256(key, \"vox-trust/0/circle-seal\\0\" || authenticated_fields). Circle key id = first 4 bytes (big-endian) of SHA-256(\"vox-trust/0/key-id\" || key).",
+  "packing": [
+    {
+      "bytes": "037ab6fbbc48d2af342eb7c034",
+      "counter": 4660,
+      "key_id": 3735928559,
+      "mode": "circle",
+      "name": "sample",
+      "tag": 195948557,
+      "time": 43981,
+      "version": 0
+    },
+    {
+      "bytes": "f7fffffffffffffffffffffffc",
+      "counter": 65535,
+      "key_id": 4294967295,
+      "mode": "public",
+      "name": "all-ones",
+      "tag": 4294967295,
+      "time": 65535,
+      "version": 15
+    },
+    {
+      "bytes": "00000000000000000000000000",
+      "counter": 0,
+      "key_id": 0,
+      "mode": "circle",
+      "name": "all-zeros",
+      "tag": 0,
+      "time": 0,
+      "version": 0
+    }
+  ]
+}

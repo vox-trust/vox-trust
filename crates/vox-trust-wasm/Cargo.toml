@@ -1,0 +1,15 @@
+[package]
+name = "vox-trust-wasm"
+description = "WebAssembly (C ABI) build of vox-trust-core for the in-browser demo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+vox-trust-core = { path = "../vox-trust-core" }
