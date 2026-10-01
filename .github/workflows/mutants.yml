@@ -42,10 +42,11 @@ jobs:
               *) echo "::error::cargo-mutants did not run (exit $status)"; exit 1 ;;
             esac
           }
-          mutants -p vox-trust-core --timeout 60 --output target/mutants-core
+          mkdir -p mutants-out
+          mutants -p vox-trust-core --timeout 60 --output mutants-out/core
           mutants -p vox-trust-cli -f crates/vox-trust-cli/src/keyfile.rs \
-            --timeout 300 --output target/mutants-cli
-          missed="$(cat target/mutants-core/mutants.out/missed.txt target/mutants-cli/mutants.out/missed.txt)"
+            --timeout 300 --output mutants-out/cli
+          missed="$(cat mutants-out/core/mutants.out/missed.txt mutants-out/cli/mutants.out/missed.txt)"
           if [ -n "$missed" ]; then
             echo "::error::mutants not caught by any test"
             echo "$missed"
@@ -56,5 +57,5 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mutants
-          path: target/mutants-*/mutants.out
+          path: mutants-out/*/mutants.out
           if-no-files-found: ignore

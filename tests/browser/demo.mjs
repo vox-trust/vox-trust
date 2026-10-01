@@ -345,7 +345,7 @@ await step("RTL: Arabic isolates numbers, hex and the report so they stay left-t
   assert.equal(await lp.locator("#report").evaluate((e) => getComputedStyle(e).direction), "ltr");
   assert.equal(await lp.locator("#pinned").evaluate((e) => getComputedStyle(e).direction), "ltr");
   assert.equal(await lp.locator("body").evaluate((e) => getComputedStyle(e).direction), "rtl");
-  assert.match(await lp.locator("#coreStatus").innerText(), /\u2068/);
+  assert.match(await lp.locator("#coreStatus").textContent(), /\u2068/);
   await pickLang(lp, "en");
 });
 
