@@ -1,0 +1,11 @@
+[package]
+name = "vox-trust-core"
+description = "Seal layout and trust-policy logic for the Vox Trust protocol (pre-alpha, no cryptography or audio yet)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["voice", "authenticity", "provenance", "deepfake", "protocol"]
+categories = ["cryptography", "multimedia::audio"]

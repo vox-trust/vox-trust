@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["crates/vox-trust-core"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/vox-trust/vox-trust"
+authors = ["Roger Oliveira"]

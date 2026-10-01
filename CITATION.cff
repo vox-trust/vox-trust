@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "Vox Trust Protocol"
+abstract: >-
+  An open protocol, with a Rust reference implementation, that seals a human
+  voice at the source so that anyone can later verify which key sealed it,
+  when, and which parts were altered. Pre-alpha; the specification is a draft.
+type: software
+authors:
+  - family-names: "Oliveira"
+    given-names: "Roger"
+    website: "https://github.com/rogeroliveira84"
+repository-code: "https://github.com/vox-trust/vox-trust"
+url: "https://vox-trust.github.io"
+license: Apache-2.0
+version: 0.0.1
+date-released: 2026-10-01
+keywords:
+  - voice authenticity
+  - provenance
+  - voice cloning
+  - deepfake
+  - audio watermarking
+  - Rust
