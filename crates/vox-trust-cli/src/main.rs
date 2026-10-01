@@ -302,7 +302,7 @@ fn cmd_keygen(args: &Args) -> Result<()> {
         )
     })?;
     let hex = Zeroizing::new(to_hex(&*key));
-    if let Err(e) = writeln!(file, "{}", &*hex).and_then(|()| file.sync_all()) {
+    if let Err(e) = writeln!(file, "{}", *hex).and_then(|()| file.sync_all()) {
         drop(file);
         let _ = fs::remove_file(path);
         return Err(Failure(
