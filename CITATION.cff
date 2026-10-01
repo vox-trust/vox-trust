@@ -13,8 +13,8 @@ authors:
 repository-code: "https://github.com/vox-trust/vox-trust"
 url: "https://vox-trust.github.io"
 license: Apache-2.0
-version: 0.3.0
-date-released: 2026-10-01
+version: 0.4.0
+date-released: 2026-10-02
 keywords:
   - voice authenticity
   - provenance

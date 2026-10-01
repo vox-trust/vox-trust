@@ -4,7 +4,7 @@ An honest plan with the gates that decide whether to continue. No dates are prom
 
 Legend: ✅ done · 🟡 partly done · ⬜ not started
 
-## Where we are (v0.3.0)
+## Where we are (v0.4.0)
 
 **Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo or the command line. It is a **v0.x draft, not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
 
@@ -87,7 +87,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 ## Phase 3: public release
 
-- 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0**; the carrier did not pass its gate
+- 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0** (the carrier did not pass its gate); **v0.4.0** adds protected keys, the versioning rules and mutation-tested core code. A 1.0 waits for an outside review.
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
 - 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
 - ⬜ Private vulnerability reporting enabled in the repository settings and tested end to end (SECURITY.md already points to it, with a fallback)
