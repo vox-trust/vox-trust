@@ -212,13 +212,22 @@ fn read_capped(path: &Path, cap: u64, what: &str, streams: bool) -> Result<Vec<u
         use std::os::unix::fs::OpenOptionsExt;
         options.custom_flags(libc::O_NONBLOCK);
     }
-    let file = options.open(path).map_err(unreadable)?;
-    let meta = file.metadata().map_err(unreadable)?;
-    if !(meta.is_file() || (streams && is_stream(&meta.file_type()))) {
-        return Err(Failure(
+    let not_regular = || {
+        Failure(
             EX_NOINPUT,
             format!("{what} {} is not a regular file", path.display()),
-        ));
+        )
+    };
+    let file = options.open(path).map_err(|e| {
+        // Windows cannot open a directory at all; say why rather than "access denied".
+        match fs::metadata(path) {
+            Ok(meta) if meta.is_dir() => not_regular(),
+            _ => unreadable(e),
+        }
+    })?;
+    let meta = file.metadata().map_err(unreadable)?;
+    if !(meta.is_file() || (streams && is_stream(&meta.file_type()))) {
+        return Err(not_regular());
     }
     let too_big = || {
         Failure(
