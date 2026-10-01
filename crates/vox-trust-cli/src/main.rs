@@ -13,22 +13,31 @@ use vox_trust_core::file::{self, Reason, SealParams, Signer, Trust};
 use vox_trust_core::{circle, decide, to_hex, wav, ContactState, SealCheck, Verdict};
 use zeroize::Zeroizing;
 
+mod keyfile;
+
 const USAGE: &str = "\
 vox-trust: seal and verify WAV files (file mode, pre-1.0, unaudited)
 
 USAGE
-  vox-trust keygen KEYFILE
-  vox-trust pubkey KEYFILE
+  vox-trust keygen KEYFILE [--plain] [--passphrase-file FILE]
+  vox-trust protect PLAIN_KEYFILE PROTECTED_KEYFILE [--passphrase-file FILE]
+  vox-trust pubkey KEYFILE [--passphrase-file FILE]
   vox-trust seal IN.wav OUT.wav --mode circle|public --key KEYFILE
-                [--chunk-seconds 1] [--counter 0] [--force]
+                [--chunk-seconds 1] [--counter 0] [--force] [--passphrase-file FILE]
   vox-trust verify FILE.wav [--circle-key KEYFILE] [--pin PUBLIC_KEY_OR_FILE]
-                [--contact stranger|always|strict] [--json]
+                [--contact stranger|always|strict] [--json] [--passphrase-file FILE]
 
 KEYS
-  A key file holds 64 hex characters (32 bytes). For circle mode it is the shared
-  secret. For public mode it is the Ed25519 private seed; `pubkey` prints the public key
-  to share. `keygen` refuses to overwrite an existing file. Key files are read only if they
-  are regular files of at most 4 KiB; WAV inputs must be regular files of at most 512 MiB.
+  A key is a 32-byte secret. For circle mode it is the shared secret. For public mode it
+  is the Ed25519 private seed; `pubkey` prints the public key to share.
+  `keygen` protects the key with a passphrase (Argon2id, 64 MiB, then XChaCha20-Poly1305)
+  unless --plain is given, which writes 64 hex characters instead. `protect` turns a plain
+  key file into a protected one. Commands that read a key accept both forms.
+  The passphrase comes from --passphrase-file (its first line), else from the environment
+  variable VOX_TRUST_PASSPHRASE, else from a prompt on the terminal (no echo).
+  New key files are created with mode 0600 and never overwrite a file. Key files are read
+  only if they are regular files of at most 4 KiB; WAV inputs must be regular files of at
+  most 512 MiB.
 
 SEAL OUTPUT
   `seal` refuses to overwrite an existing OUT.wav (pass --force to replace it) and never
@@ -40,8 +49,8 @@ EXIT CODES (verify)
   0 verified   1 unsealed   2 warning   3 alert
   Exit code 1 is NOT an error and NOT a pass: the file has no seal, or its seal is under a
   key you did not supply, so nothing was verified. Treat only 0 as verified.
-  64 usage error   65 not a readable WAV file (or too large)   66 cannot read an input
-  73 cannot write output
+  64 usage error   65 not a readable WAV file or key file (or too large)
+  66 cannot read an input   73 cannot write output   77 wrong passphrase
 
 NOTE
   Seals survive only bit-exact copies. Re-encoding (MP3, AAC, resampling, re-recording)
@@ -52,6 +61,7 @@ const EX_USAGE: u8 = 64;
 const EX_DATAERR: u8 = 65;
 const EX_NOINPUT: u8 = 66;
 const EX_CANTCREAT: u8 = 73;
+const EX_NOPERM: u8 = 77;
 
 /// Writes to stdout and ignores a closed pipe (`vox-trust verify f | head -0`): the exit
 /// code is the verdict, and `println!` would panic with status 101 instead.
@@ -207,8 +217,9 @@ fn read_bounded(path: &Path, cap: u64, what: &str) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn read_key_file(path: &Path) -> Result<Zeroizing<[u8; 32]>> {
-    let bytes = Zeroizing::new(read_bounded(path, KEY_FILE_CAP, "key file")?);
+/// A file holding 64 hex characters (a plain key, or a public key to pin).
+fn read_hex_file(path: &Path, what: &str) -> Result<Zeroizing<[u8; 32]>> {
+    let bytes = Zeroizing::new(read_bounded(path, KEY_FILE_CAP, what)?);
     let text = std::str::from_utf8(&bytes).ok();
     text.and_then(parse_hex32).ok_or_else(|| {
         Failure(
@@ -216,6 +227,105 @@ fn read_key_file(path: &Path) -> Result<Zeroizing<[u8; 32]>> {
             format!("{} must contain exactly 64 hex characters", path.display()),
         )
     })
+}
+
+const PASSPHRASE_ENV: &str = "VOX_TRUST_PASSPHRASE";
+
+/// The passphrase: --passphrase-file, else VOX_TRUST_PASSPHRASE, else a terminal prompt
+/// (twice when `confirm`, for a new key).
+fn passphrase(args: &Args, prompt: &str, confirm: bool) -> Result<Zeroizing<String>> {
+    let text = if let Some(file) = args.get_os("passphrase-file") {
+        let bytes = Zeroizing::new(read_bounded(
+            Path::new(file),
+            KEY_FILE_CAP,
+            "passphrase file",
+        )?);
+        let text = std::str::from_utf8(&bytes)
+            .map_err(|_| Failure(EX_DATAERR, "the passphrase file must be UTF-8".into()))?;
+        Zeroizing::new(text.lines().next().unwrap_or("").to_string())
+    } else if let Some(value) = std::env::var_os(PASSPHRASE_ENV) {
+        Zeroizing::new(
+            value
+                .into_string()
+                .map_err(|_| usage(format!("{PASSPHRASE_ENV} must be valid UTF-8")))?,
+        )
+    } else {
+        let no_terminal = |e: io::Error| {
+            usage(format!(
+                "a passphrase is needed and there is no terminal to ask ({e}); \
+                 pass --passphrase-file or set {PASSPHRASE_ENV}"
+            ))
+        };
+        let first = Zeroizing::new(rpassword::prompt_password(prompt).map_err(no_terminal)?);
+        if confirm {
+            let again = Zeroizing::new(
+                rpassword::prompt_password("Repeat the passphrase: ").map_err(no_terminal)?,
+            );
+            if *again != *first {
+                return Err(usage("the two passphrases differ"));
+            }
+        }
+        first
+    };
+    if text.is_empty() {
+        return Err(usage("the passphrase is empty"));
+    }
+    Ok(text)
+}
+
+/// A secret key file, plain or protected.
+fn read_secret_key(path: &Path, args: &Args) -> Result<Zeroizing<[u8; 32]>> {
+    let bytes = Zeroizing::new(read_bounded(path, KEY_FILE_CAP, "key file")?);
+    let text = std::str::from_utf8(&bytes).unwrap_or("");
+    if !keyfile::is_protected(text) {
+        return read_hex_file(path, "key file");
+    }
+    let pass = passphrase(args, &format!("Passphrase for {}: ", path.display()), false)?;
+    keyfile::open(text, pass.as_bytes()).map_err(|e| {
+        let code = match e {
+            keyfile::KeyFileError::WrongPassphrase => EX_NOPERM,
+            _ => EX_DATAERR,
+        };
+        Failure(code, format!("{}: {e}", path.display()))
+    })
+}
+
+/// Creates a new key file (mode 0600, never replacing a file) holding `text`.
+fn write_new_key_file(path: &Path, text: &str) -> Result<()> {
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(path).map_err(|e| {
+        Failure(
+            EX_CANTCREAT,
+            format!("cannot create {}: {e}", path.display()),
+        )
+    })?;
+    if let Err(e) = writeln!(file, "{text}").and_then(|()| file.sync_all()) {
+        drop(file);
+        let _ = fs::remove_file(path);
+        return Err(Failure(
+            EX_CANTCREAT,
+            format!("cannot write {}: {e}", path.display()),
+        ));
+    }
+    Ok(())
+}
+
+/// The protected form of `secret`, with a fresh random salt and nonce.
+fn protected_text(secret: &[u8; 32], pass: &str) -> Result<Zeroizing<String>> {
+    let mut salt = [0u8; 16];
+    let mut nonce = [0u8; 24];
+    getrandom::fill(&mut salt)
+        .and_then(|()| getrandom::fill(&mut nonce))
+        .map_err(|e| Failure(EX_CANTCREAT, format!("no randomness: {e}")))?;
+    keyfile::protect(secret, pass.as_bytes(), keyfile::DEFAULT_COST, salt, nonce)
+        .map(Zeroizing::new)
+        .map_err(|e| Failure(EX_CANTCREAT, format!("cannot protect the key: {e}")))
 }
 
 fn read_file(path: &Path) -> Result<Vec<u8>> {
@@ -282,50 +392,78 @@ fn now_unix() -> u64 {
 }
 
 fn cmd_keygen(args: &Args) -> Result<()> {
-    args.check_known(&[])?;
+    args.check_known(&["plain", "passphrase-file"])?;
     args.expect_positional(1, "keygen KEYFILE")?;
     let path = Path::new(&args.positional[0]);
-    let mut key = Zeroizing::new([0u8; 32]);
-    getrandom::fill(&mut *key).map_err(|e| Failure(EX_CANTCREAT, format!("no randomness: {e}")))?;
-
-    let mut options = fs::OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    let mut file = options.open(path).map_err(|e| {
-        Failure(
-            EX_CANTCREAT,
-            format!("cannot create {}: {e}", path.display()),
-        )
-    })?;
-    let hex = Zeroizing::new(to_hex(&*key));
-    if let Err(e) = writeln!(file, "{}", *hex).and_then(|()| file.sync_all()) {
-        drop(file);
-        let _ = fs::remove_file(path);
-        return Err(Failure(
-            EX_CANTCREAT,
-            format!("cannot write {}: {e}", path.display()),
+    if args.has("plain") && args.has("passphrase-file") {
+        return Err(usage(
+            "--plain and --passphrase-file cannot be used together",
         ));
     }
-    drop(file);
+    if fs::symlink_metadata(path).is_ok() {
+        return Err(Failure(
+            EX_CANTCREAT,
+            format!(
+                "{} already exists; keygen never overwrites a key",
+                path.display()
+            ),
+        ));
+    }
+    let mut key = Zeroizing::new([0u8; 32]);
+    getrandom::fill(&mut *key).map_err(|e| Failure(EX_CANTCREAT, format!("no randomness: {e}")))?;
+    let text = if args.has("plain") {
+        Zeroizing::new(to_hex(&*key))
+    } else {
+        let pass = passphrase(args, "Passphrase for the new key: ", true)?;
+        protected_text(&key, &pass)?
+    };
+    write_new_key_file(path, &text)?;
     emit(&format!(
-        "wrote a new 32-byte secret to {} (keep it private)\n\
+        "wrote a new 32-byte secret to {} ({}; keep it private)\n\
          circle key id: {}\n\
          if you use it as a public-mode seed, the public key is: {}\n",
         path.display(),
+        if args.has("plain") {
+            "plain, not protected"
+        } else {
+            "protected with a passphrase"
+        },
         to_hex(&circle::key_id(&key).to_be_bytes()),
         to_hex(&file::public_key(&key))
     ));
     Ok(())
 }
 
+fn cmd_protect(args: &Args) -> Result<()> {
+    args.check_known(&["passphrase-file"])?;
+    args.expect_positional(2, "protect PLAIN_KEYFILE PROTECTED_KEYFILE")?;
+    let (input, output) = (
+        Path::new(&args.positional[0]),
+        Path::new(&args.positional[1]),
+    );
+    let bytes = Zeroizing::new(read_bounded(input, KEY_FILE_CAP, "key file")?);
+    if keyfile::is_protected(std::str::from_utf8(&bytes).unwrap_or("")) {
+        return Err(Failure(
+            EX_DATAERR,
+            format!("{} is already protected", input.display()),
+        ));
+    }
+    let key = read_hex_file(input, "key file")?;
+    let pass = passphrase(args, "Passphrase for the protected key: ", true)?;
+    let text = protected_text(&key, &pass)?;
+    write_new_key_file(output, &text)?;
+    emit(&format!(
+        "wrote {} (protected with a passphrase); delete the plain file {} once you have checked it\n",
+        output.display(),
+        input.display()
+    ));
+    Ok(())
+}
+
 fn cmd_pubkey(args: &Args) -> Result<()> {
-    args.check_known(&[])?;
+    args.check_known(&["passphrase-file"])?;
     args.expect_positional(1, "pubkey KEYFILE")?;
-    let seed = read_key_file(Path::new(&args.positional[0]))?;
+    let seed = read_secret_key(Path::new(&args.positional[0]), args)?;
     let public = file::public_key(&seed);
     emit(&format!(
         "public key: {}\nkey id:     {}\n",
@@ -336,7 +474,14 @@ fn cmd_pubkey(args: &Args) -> Result<()> {
 }
 
 fn cmd_seal(args: &Args) -> Result<()> {
-    args.check_known(&["mode", "key", "chunk-seconds", "counter", "force"])?;
+    args.check_known(&[
+        "mode",
+        "key",
+        "chunk-seconds",
+        "counter",
+        "force",
+        "passphrase-file",
+    ])?;
     args.expect_positional(2, "seal IN.wav OUT.wav")?;
     let (input, output) = (
         Path::new(&args.positional[0]),
@@ -381,7 +526,7 @@ fn cmd_seal(args: &Args) -> Result<()> {
             ),
         ));
     }
-    let key = read_key_file(Path::new(key_path))?;
+    let key = read_secret_key(Path::new(key_path), args)?;
     let bytes = read_file(input)?;
     let rate = wav::parse(&bytes)
         .map_err(|e| Failure(EX_DATAERR, format!("{}: {e}", input.display())))?
@@ -488,18 +633,18 @@ fn describe(report: &file::Report, verdict: Verdict) -> String {
 }
 
 fn cmd_verify(args: &Args) -> Result<u8> {
-    args.check_known(&["circle-key", "pin", "contact", "json"])?;
+    args.check_known(&["circle-key", "pin", "contact", "json", "passphrase-file"])?;
     args.expect_positional(1, "verify FILE.wav")?;
     let path = Path::new(&args.positional[0]);
     let circle_key = args
         .get_os("circle-key")
-        .map(|p| read_key_file(Path::new(p)))
+        .map(|p| read_secret_key(Path::new(p), args))
         .transpose()?;
     let pinned: Option<[u8; 32]> = match args.get_os("pin") {
         None => None,
         Some(value) => Some(match value.to_str().and_then(parse_hex32) {
             Some(key) => *key,
-            None => *read_key_file(Path::new(value))?,
+            None => *read_hex_file(Path::new(value), "public key file")?,
         }),
     };
     let contact = match args.get("contact")?.unwrap_or("stranger") {
@@ -543,10 +688,14 @@ fn run(raw: &[OsString]) -> Result<u8> {
         return Err(usage("no command given"));
     };
     let command = command.to_string_lossy();
-    let known = matches!(command.as_ref(), "keygen" | "pubkey" | "seal" | "verify");
+    let known = matches!(
+        command.as_ref(),
+        "keygen" | "protect" | "pubkey" | "seal" | "verify"
+    );
     let switches: &[&str] = match command.as_ref() {
         "verify" => &["json"],
         "seal" => &["force"],
+        "keygen" => &["plain"],
         _ => &[],
     };
     if known {
@@ -557,6 +706,7 @@ fn run(raw: &[OsString]) -> Result<u8> {
         }
         return match command.as_ref() {
             "keygen" => cmd_keygen(&args).map(|()| 0),
+            "protect" => cmd_protect(&args).map(|()| 0),
             "pubkey" => cmd_pubkey(&args).map(|()| 0),
             "seal" => cmd_seal(&args).map(|()| 0),
             _ => cmd_verify(&args),

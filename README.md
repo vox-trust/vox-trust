@@ -58,10 +58,12 @@ Two modes: **circle** (people who know each other, shared secret) and **public**
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.3.0 vox-trust-cli
 
-vox-trust keygen me.key
+vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
 vox-trust verify sealed.wav --circle-key me.key          # exit code 0 = verified
 ```
+
+`keygen` protects the key with a passphrase (Argon2id and XChaCha20-Poly1305) and asks for it whenever the key is used. In scripts, pass `--passphrase-file` or set `VOX_TRUST_PASSPHRASE`; `--plain` writes an unprotected key.
 
 Edit a single sample of `sealed.wav` and verify again: the exit code becomes 3 and the altered chunk is printed. Exit codes: 0 verified, 1 unsealed, 2 warning, 3 alert.
 
@@ -100,8 +102,13 @@ Attackers, claims and the weaknesses found so far (including one that is still u
 | Published test vectors | Byte-exact seals and manifests in [`spec/test-vectors/`](spec/test-vectors) | included above |
 | Cross-check in Python | `tools/check_vectors.py` rebuilds every vector from the spec text (standard library, plus `cryptography` for Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly end to end | The compiled module reproduces the vectors byte for byte, handles garbage input, and does not leak memory | `scripts/build-web.sh && node --test tests/node/*.mjs` |
-| Real browser | The demo page in headless Chromium: sealing, six attacks, public-key pinning, five languages, accessibility, phone width, dark mode | `node tests/browser/demo.mjs` |
+| Real browser | The demo page in headless Chromium, Firefox and WebKit: sealing, six attacks, public-key pinning, five languages, accessibility, phone width, dark mode | `BROWSER=firefox node tests/browser/demo.mjs` |
 | Fuzzing | Every parser of untrusted input, with invariants (sealed audio always verifies, any flipped sample bit is found in the right chunk, pairing text has one form) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
+| Coverage | Share of Rust lines the tests execute; CI fails below 96 % | `scripts/coverage.sh` |
+| Mutation testing | Changes operators and return values in `vox-trust-core` and the key-file code, one at a time, and checks that a test fails; the few changes that cannot alter behaviour are listed with the reason in `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core` |
+| Dependencies | Known vulnerabilities, licenses, sources | `cargo deny check` |
+
+CI runs the Rust tests on Linux, macOS and Windows.
 
 The Python check is written by the same author, so it is a cross-check, not an independent implementation. [An independent implementation is what the spec still needs.](docs/ROADMAP.md)
 

@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+Closing the code side before an outside audit: format decisions, protected keys, and tests that check the tests.
+
+### Added
+- **Protected key files.** `vox-trust keygen` protects the secret with a passphrase by default: Argon2id (RFC 9106 second recommended option: 64 MiB, 3 passes, 4 lanes) and XChaCha20-Poly1305, with the parameters, salt and nonce authenticated. `--passphrase-file` or `VOX_TRUST_PASSPHRASE` for scripts, `--plain` for an unprotected key, and `vox-trust protect` to convert an existing plain key. A wrong passphrase exits with code 77. The known-answer vector was produced by a separate Python implementation (argon2-cffi, pycryptodome), not by the Rust code it tests.
+- Specification section 13, *Versioning, stability and registries*: which changes need a new version, and a registry of every identifier (format version, modes, chunk ID, domain strings, pairing prefix, carrier name).
+- `coarse_time()` and `replay::DEFAULT_SKEW_MINUTES` in `vox-trust-core`.
+- **Tests that check the tests:** line coverage with a floor of 96 % (`scripts/coverage.sh`); mutation testing of the core and the key-file code (`cargo mutants`, new workflow), where every surviving mutant was killed by a new test or, if it cannot change behaviour, listed with the reason in `.cargo/mutants.toml`; CI on macOS and Windows; the browser demo tested in Firefox and WebKit as well as Chromium; `cargo deny` for advisories, licenses and sources.
+- Benchmarks (`cargo bench`): file-mode sealing and verification, carrier embedding and detection.
+- Releases carry a CycloneDX software bill of materials for the CLI, the core library and the WebAssembly module, covered by `SHA256SUMS` and the attestations.
+
+### Changed
+- Specification draft 0.2. The seal's `time` field is defined as whole minutes since the Unix epoch, modulo 2^16 (it was left to implementations); the counter must increase, survive restarts and never repeat under one key; the default live clock skew is 10 minutes. In file mode the creation time and counter are informational and never a reason to reject. The test vectors gain `coarse_times`.
+- **Breaking for scripts:** `keygen` now asks for a passphrase unless `--plain`, `--passphrase-file` or `VOX_TRUST_PASSPHRASE` is given.
+
+### Fixed
+- `ReplayGuard::default()` allowed a clock skew of 0 minutes, so it accepted only seals stamped in the verifier's current minute. It now uses the 10-minute default.
+
 ## [0.3.0] - 2026-10-01
 
 Phase 0: an experimental in-band carrier, measured against real codecs. It did not pass the gate, so file mode stays the only mode that gives verdicts.

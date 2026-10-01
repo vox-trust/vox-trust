@@ -104,11 +104,25 @@ pub fn seal_vectors() -> Value {
         .map(|k| json!({ "key": to_hex(k), "key_id": vox_trust_core::circle::key_id(k) }))
         .collect();
 
+    let coarse_times: Vec<Value> = [
+        0u64,
+        59,
+        60,
+        3_932_159,
+        3_932_160,
+        1_700_000_000,
+        4_102_444_800,
+    ]
+    .iter()
+    .map(|&t| json!({ "unix_seconds": t, "time": vox_trust_core::coarse_time(t) }))
+    .collect();
+
     json!({
-        "description": "Vox Trust seal vectors, draft 0.1. All keys in this file are public test values: NEVER use them to protect anything. Circle tag = first 4 bytes of HMAC-SHA-256(key, \"vox-trust/0/circle-seal\\0\" || authenticated_fields). Circle key id = first 4 bytes (big-endian) of SHA-256(\"vox-trust/0/key-id\" || key).",
+        "description": "Vox Trust seal vectors, draft 0.2. All keys in this file are public test values: NEVER use them to protect anything. Circle tag = first 4 bytes of HMAC-SHA-256(key, \"vox-trust/0/circle-seal\\0\" || authenticated_fields). Circle key id = first 4 bytes (big-endian) of SHA-256(\"vox-trust/0/key-id\" || key). Coarse time = floor(unix_seconds / 60) mod 65536.",
         "packing": packing,
         "circle_tags": circle_tags,
         "circle_key_ids": key_ids,
+        "coarse_times": coarse_times,
     })
 }
 

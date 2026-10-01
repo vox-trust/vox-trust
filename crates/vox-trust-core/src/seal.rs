@@ -9,6 +9,13 @@ pub const SEAL_BYTES: usize = 13;
 /// Highest layout version that fits the 4-bit field.
 pub const MAX_VERSION: u8 = 15;
 
+/// The seal's coarse `time` field for a moment given in seconds since the Unix epoch (UTC):
+/// whole minutes since the epoch, modulo 2^16 (spec section 4). It wraps every 65,536
+/// minutes, about 45.5 days; compare stamps with [`crate::replay::minute_distance`].
+pub fn coarse_time(unix_seconds: u64) -> u16 {
+    ((unix_seconds / 60) % 65_536) as u16
+}
+
 const PAD_BITS: u32 = 2;
 
 /// How a seal is authenticated.
@@ -239,6 +246,37 @@ mod tests {
         assert_eq!(
             sample().authenticated_fields(),
             [0, 0, 0xDE, 0xAD, 0xBE, 0xEF, 0x12, 0x34, 0xAB, 0xCD]
+        );
+    }
+
+    #[test]
+    fn coarse_time_is_minutes_since_the_unix_epoch_modulo_2_16() {
+        assert_eq!(coarse_time(0), 0);
+        assert_eq!(coarse_time(59), 0);
+        assert_eq!(coarse_time(60), 1);
+        assert_eq!(coarse_time(65_535 * 60 + 59), 65_535);
+        assert_eq!(coarse_time(65_536 * 60), 0);
+        // 2023-11-14T22:13:20Z: 28,333,333 minutes since the epoch.
+        assert_eq!(coarse_time(1_700_000_000), (28_333_333 % 65_536) as u16);
+        assert_eq!(coarse_time(u64::MAX), ((u64::MAX / 60) % 65_536) as u16);
+    }
+
+    #[test]
+    fn display() {
+        assert_eq!(Mode::Circle.to_string(), Mode::Circle.as_str());
+        assert_eq!(Mode::Public.to_string(), Mode::Public.as_str());
+        assert_eq!(
+            DecodeError::Length(5).to_string(),
+            "seal must be 13 bytes, got 5"
+        );
+        assert!(!DecodeError::ReservedBits.to_string().is_empty());
+        assert_eq!(
+            DecodeError::UnknownMode(3).to_string(),
+            "unknown seal mode 3"
+        );
+        assert_eq!(
+            EncodeError::VersionOutOfRange(16).to_string(),
+            "seal version 16 does not fit in 4 bits"
         );
     }
 }

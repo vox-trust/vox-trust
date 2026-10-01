@@ -45,7 +45,37 @@
       "time": 0
     }
   ],
-  "description": "Vox Trust seal vectors, draft 0.1. All keys in this file are public test values: NEVER use them to protect anything. Circle tag = first 4 bytes of HMAC-SHA-256(key, \"vox-trust/0/circle-seal\\0\" || authenticated_fields). Circle key id = first 4 bytes (big-endian) of SHA-256(\"vox-trust/0/key-id\" || key).",
+  "coarse_times": [
+    {
+      "time": 0,
+      "unix_seconds": 0
+    },
+    {
+      "time": 0,
+      "unix_seconds": 59
+    },
+    {
+      "time": 1,
+      "unix_seconds": 60
+    },
+    {
+      "time": 65535,
+      "unix_seconds": 3932159
+    },
+    {
+      "time": 0,
+      "unix_seconds": 3932160
+    },
+    {
+      "time": 21781,
+      "unix_seconds": 1700000000
+    },
+    {
+      "time": 20032,
+      "unix_seconds": 4102444800
+    }
+  ],
+  "description": "Vox Trust seal vectors, draft 0.2. All keys in this file are public test values: NEVER use them to protect anything. Circle tag = first 4 bytes of HMAC-SHA-256(key, \"vox-trust/0/circle-seal\\0\" || authenticated_fields). Circle key id = first 4 bytes (big-endian) of SHA-256(\"vox-trust/0/key-id\" || key). Coarse time = floor(unix_seconds / 60) mod 65536.",
   "packing": [
     {
       "bytes": "037ab6fbbc48d2af342eb7c034",

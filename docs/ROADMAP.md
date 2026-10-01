@@ -13,14 +13,14 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started
 
 What is done:
 
-- ✅ Specification draft 0.1: file mode fully specified; in-band seal as draft; the experimental carrier stdm-1 specified in enough detail to reimplement ([spec/SPEC.md](../spec/SPEC.md))
+- ✅ Specification draft 0.2: file mode fully specified, its version-0 format a release candidate with a defined time epoch, counter rules, versioning rules and a registry of identifiers (section 13); in-band seal as draft; the experimental carrier stdm-1 specified in enough detail to reimplement ([spec/SPEC.md](../spec/SPEC.md))
 - ✅ Threat model draft 0.1 with the author's own adversarial findings and explicit non-claims ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
 - ✅ `vox-trust-core`: seal layout, circle (HMAC-SHA-256) and public (Ed25519, strict) modes, **file mode**, trust policy, replay and rate-limit helpers, pairing text; strict WAV parsing; keys redacted from `Debug` and zeroized where the code controls them
 - ✅ Published test vectors including **negative vectors**, byte-exact across Rust, WebAssembly and a Python cross-check (same author, so a cross-check, not independence)
-- ✅ `vox-trust` command-line tool, hardened (regular files only, size caps, atomic non-overwriting `seal`, no panics on odd input)
+- ✅ `vox-trust` command-line tool, hardened (regular files only, size caps, atomic non-overwriting `seal`, no panics on odd input); key files protected by a passphrase by default (Argon2id, XChaCha20-Poly1305), with a known-answer vector from an independent implementation
 - ✅ WebAssembly build (reproducible, no imports) and a browser demo that **really verifies**, in **five languages** (English, Português, Español, 中文, العربية with RTL), tested in a real browser
 - ✅ Website in the same five languages with SEO metadata
-- ✅ CI: format, clippy, tests, docs, minimum supported Rust (1.94), dependency advisories, vectors, WebAssembly, real-browser demo, fuzzing
+- ✅ CI: format, clippy, tests on Linux, macOS and Windows, docs, minimum supported Rust (1.94), line coverage with a floor, dependency advisories, licenses and sources (`cargo deny`), vectors, WebAssembly, the demo in Chromium, Firefox and WebKit, fuzzing; mutation testing of the core and the key-file code on every change to them and weekly
 - ✅ Two internal adversarial review rounds, with fixes and regression tests
 - ✅ Releases (from v0.2.0) published by a workflow, with binaries for Linux, macOS and Windows, the WebAssembly module and the demo, `SHA256SUMS` and build-provenance attestations; the WebAssembly module is reproducible byte for byte with the pinned toolchain
 - ✅ Phase 0 measurement: carrier, reproducible benchmark (real codecs, perceptual quality, false alarms), published results and a decision record
@@ -62,7 +62,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 **Proposed gate (to be revised against the data):** continue with watermark carrying only if a backend verifies ≥ 95% of the time through Opus 24 kbit/s, AAC 64 kbit/s and MP3 128 kbit/s, and ≥ 80% through AMR-WB 12.65 kbit/s, with a false-accept rate per window no worse than the tag's 2^-32 *per candidate tested*. If none does, file mode (already built) stays the only mode and watermark carrying stays experimental.
 
-## Phase 1: core (draft 0.1)
+## Phase 1: core (drafts 0.1 and 0.2)
 
 - 🟡 Circle-mode tag (HMAC) and public-mode signature (Ed25519): done for file mode and for the in-band circle tag. COSE/C2PA alignment of the manifest is not done.
 - 🟡 Pairing format: text format specified and implemented. QR rendering and a key store are application work, not done.
@@ -75,7 +75,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 **Exit:** someone other than the author reproduces the test vectors from the specification alone. ⬜ (needs another person; the Python check is the author's own)
 
-## Phase 2: review and a second implementation (draft 0.2)
+## Phase 2: review and a second implementation (draft 0.3)
 
 - ⬜ Independent review of the threat model and the cryptographic design
 - 🟡 A second implementation written from the specification: `tools/check_vectors.py` re-implements the vectors from the spec text, but by the same author. An implementation by someone else is still needed.
@@ -143,4 +143,4 @@ A consumer app that competes with existing family code-word apps; deepfake detec
 
 ## Open questions
 
-See [spec/SPEC.md](../spec/SPEC.md), section 13.
+See [spec/SPEC.md](../spec/SPEC.md), section 14.

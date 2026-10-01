@@ -1,0 +1,60 @@
+name: Mutants
+
+# Mutation testing (cargo-mutants) of the core library and the CLI's key-file code: each
+# mutant changes one operator or return value, and some test must fail. Equivalent mutants
+# (changes that cannot alter behaviour) are listed in .cargo/mutants.toml with the reason.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/vox-trust-core/**"
+      - "crates/vox-trust-cli/src/keyfile.rs"
+      - ".cargo/mutants.toml"
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutants:
+    name: cargo-mutants
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Install cargo-mutants
+        run: cargo install --locked cargo-mutants
+      - name: Mutants
+        run: |
+          # Exit 2 means missed and 3 timeouts (a hung mutant counts as caught), and 3 can hide
+          # 2, so the verdict is read from missed.txt. Any other code means the run failed.
+          mutants() {
+            status=0
+            cargo mutants "$@" || status=$?
+            case "$status" in
+              0|2|3) ;;
+              *) echo "::error::cargo-mutants did not run (exit $status)"; exit 1 ;;
+            esac
+          }
+          mutants -p vox-trust-core --timeout 60 --output target/mutants-core
+          mutants -p vox-trust-cli -f crates/vox-trust-cli/src/keyfile.rs \
+            --timeout 300 --output target/mutants-cli
+          missed="$(cat target/mutants-core/mutants.out/missed.txt target/mutants-cli/mutants.out/missed.txt)"
+          if [ -n "$missed" ]; then
+            echo "::error::mutants not caught by any test"
+            echo "$missed"
+            exit 1
+          fi
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutants
+          path: target/mutants-*/mutants.out
+          if-no-files-found: ignore

@@ -451,4 +451,89 @@ mod tests {
         let body = vec![0u8; u32::MAX as usize - 2];
         assert_eq!(finish_riff(body).unwrap_err(), WavError::TooLarge);
     }
+
+    /// A `fmt ` chunk body: 16-bit PCM at 8 kHz with the given layout, plus `extra` bytes.
+    fn fmt_body(channels: u16, block_align: u16, extra: &[u8]) -> Vec<u8> {
+        let mut f = Vec::new();
+        f.extend_from_slice(&1u16.to_le_bytes());
+        f.extend_from_slice(&channels.to_le_bytes());
+        f.extend_from_slice(&8000u32.to_le_bytes());
+        f.extend_from_slice(&(8000 * u32::from(block_align)).to_le_bytes());
+        f.extend_from_slice(&block_align.to_le_bytes());
+        f.extend_from_slice(&16u16.to_le_bytes());
+        f.extend_from_slice(extra);
+        f
+    }
+
+    fn file(fmt: &[u8], data: &[u8]) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_chunk(&mut body, *b"fmt ", fmt).unwrap();
+        push_chunk(&mut body, *b"data", data).unwrap();
+        finish_riff(body).unwrap()
+    }
+
+    #[test]
+    fn container_header_boundaries() {
+        // Exactly 12 bytes is a valid, empty container: it fails for lack of chunks.
+        assert_eq!(
+            parse(b"RIFF\x04\0\0\0WAVE").unwrap_err(),
+            WavError::MissingFmt
+        );
+        // Both magic values are required.
+        let good = encode_pcm16(1, 8000, &pcm(4, 1)).unwrap();
+        for (at, bad) in [(0, b"RIFX"), (8, b"AVI ")] {
+            let mut wrong = good.clone();
+            wrong[at..at + 4].copy_from_slice(bad);
+            assert_eq!(parse(&wrong).unwrap_err(), WavError::NotRiffWave);
+        }
+    }
+
+    #[test]
+    fn fmt_chunk_boundaries() {
+        let data = pcm(4, 1);
+        // An extended fmt chunk (cbSize = 0) is still plain PCM.
+        assert_eq!(
+            parse(&file(&fmt_body(1, 2, &[0, 0]), &data))
+                .unwrap()
+                .frames(),
+            4
+        );
+        // Shorter than 16 bytes.
+        let short = &fmt_body(1, 2, &[])[..14];
+        assert_eq!(
+            parse(&file(short, &data)).unwrap_err(),
+            WavError::UnsupportedFormat
+        );
+        // Zero channels, even with a consistent (zero) block alignment.
+        assert_eq!(
+            parse(&file(&fmt_body(0, 0, &[]), &data)).unwrap_err(),
+            WavError::BadBlockAlign
+        );
+        // Block alignment that does not match the channels.
+        assert_eq!(
+            parse(&file(&fmt_body(1, 4, &[]), &data)).unwrap_err(),
+            WavError::BadBlockAlign
+        );
+    }
+
+    #[test]
+    fn errors_have_messages() {
+        for e in [
+            WavError::TooShort,
+            WavError::NotRiffWave,
+            WavError::TruncatedChunk,
+            WavError::MissingFmt,
+            WavError::MissingData,
+            WavError::DuplicateChunk,
+            WavError::MultipleManifests,
+            WavError::UnsupportedFormat,
+            WavError::BadBlockAlign,
+            WavError::BadDataLength,
+            WavError::TrailingBytes,
+            WavError::SizeMismatch,
+            WavError::TooLarge,
+        ] {
+            assert!(!e.to_string().is_empty(), "{e:?}");
+        }
+    }
 }

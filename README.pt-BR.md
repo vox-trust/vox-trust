@@ -60,10 +60,12 @@ Dois modos: **círculo** (pessoas que se conhecem, segredo compartilhado) e **p�
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.3.0 vox-trust-cli
 
-vox-trust keygen me.key
+vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
 vox-trust verify sealed.wav --circle-key me.key          # exit code 0 = verified
 ```
+
+O `keygen` protege a chave com uma senha (Argon2id e XChaCha20-Poly1305) e a pede sempre que a chave é usada. Em scripts, use `--passphrase-file` ou a variável `VOX_TRUST_PASSPHRASE`; `--plain` grava uma chave sem proteção.
 
 Edite uma única amostra de `sealed.wav` e verifique de novo: o código de saída passa a ser 3 e o trecho alterado é exibido. Códigos de saída: 0 verificado, 1 sem selo, 2 aviso, 3 alerta.
 
@@ -102,8 +104,13 @@ Atacantes, alegações e as fraquezas encontradas até agora (incluindo uma que 
 | Vetores de teste publicados | Selos e manifestos idênticos byte a byte em [`spec/test-vectors/`](spec/test-vectors) | incluído acima |
 | Verificação cruzada em Python | `tools/check_vectors.py` reconstrói cada vetor a partir do texto da especificação (biblioteca padrão, mais `cryptography` para Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly de ponta a ponta | O módulo compilado reproduz os vetores byte a byte, lida com entrada inválida e não vaza memória | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
-| Navegador real | A página da demo no Chromium headless: selagem, seis ataques, fixação de chave pública, acessibilidade, largura de celular, modo escuro | `node tests/browser/demo.mjs` |
+| Navegador real | A página da demo no Chromium, Firefox e WebKit headless: selagem, seis ataques, fixação de chave pública, acessibilidade, largura de celular, modo escuro | `BROWSER=firefox node tests/browser/demo.mjs` |
 | Fuzzing | Todo parser de entrada não confiável, com invariantes (áudio selado sempre verifica, qualquer bit de amostra alterado é achado no trecho certo, o texto de pareamento tem uma só forma) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
+| Cobertura | Fração das linhas de Rust que os testes executam; o CI falha abaixo de 96 % | `scripts/coverage.sh` |
+| Testes de mutação | Altera operadores e valores de retorno do `vox-trust-core` e do código de arquivo de chave, um de cada vez, e confere que algum teste falha; as poucas alterações que não mudam o comportamento estão listadas com o motivo em `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core` |
+| Dependências | Vulnerabilidades conhecidas, licenças, origens | `cargo deny check` |
+
+O CI roda os testes de Rust em Linux, macOS e Windows.
 
 A verificação em Python foi escrita pelo mesmo autor, portanto é uma verificação cruzada, não uma implementação independente. [Uma implementação independente é o que a especificação ainda precisa.](docs/ROADMAP.md)
 

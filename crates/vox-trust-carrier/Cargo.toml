@@ -16,4 +16,9 @@ categories = ["multimedia::audio"]
 realfft = "3.5.0"
 
 [dev-dependencies]
+criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
 vox-trust-core = { path = "../vox-trust-core" }
+
+[[bench]]
+name = "carrier"
+harness = false

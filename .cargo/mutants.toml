@@ -1,0 +1,9 @@
+# cargo-mutants configuration (https://mutants.rs). Run: cargo mutants -p vox-trust-core
+
+# Equivalent mutants: they cannot change behaviour, so no test can catch them.
+exclude_re = [
+    # The packed seal fields do not overlap, so OR and XOR give the same bits.
+    "replace \\| with \\^ in Seal::to_bytes",
+    # `as u16` already keeps the low 16 bits; `% 65_536` only states it.
+    "replace % with \\+ in coarse_time",
+]

@@ -27,6 +27,35 @@ jobs:
       - name: Docs
         run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace --locked
 
+  other-os:
+    name: Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Test
+        run: cargo test --workspace --locked
+
+  coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        run: cargo install --locked cargo-llvm-cov
+      - name: Coverage (fails below the floor set in scripts/coverage.sh)
+        run: scripts/coverage.sh
+
   msrv:
     name: Minimum supported Rust (1.94)
     runs-on: ubuntu-latest
@@ -39,15 +68,18 @@ jobs:
         run: cargo +1.94 test --workspace --locked
 
   audit:
-    name: Dependency advisories
+    name: Dependency advisories and policy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
         with:
           toolchain: stable
-      - run: cargo install --locked cargo-audit
-      - run: cargo audit
+      - run: cargo install --locked cargo-audit cargo-deny
+      - name: RustSec advisories
+        run: cargo audit
+      - name: Licences, banned crates, sources (deny.toml)
+        run: cargo deny --locked check
 
   independent-check:
     name: Independent vector check and WebAssembly
@@ -74,8 +106,13 @@ jobs:
         run: node --test tests/node/*.mjs
 
   browser:
-    name: Demo in a real browser
+    name: Demo in ${{ matrix.browser }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # webkit is the engine behind Safari.
+        browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
@@ -87,9 +124,11 @@ jobs:
           node-version: 22
       - name: Build the WebAssembly core
         run: scripts/build-web.sh
-      - name: Install Playwright and Chromium
+      - name: Install Playwright and the browser
         run: |
           npm install --no-save playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps "${{ matrix.browser }}"
       - name: Drive the demo page
+        env:
+          BROWSER: ${{ matrix.browser }}
         run: node tests/browser/demo.mjs

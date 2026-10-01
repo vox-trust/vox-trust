@@ -17,6 +17,7 @@
 - افتح بلاغًا قبل أي تغيير كبير لنتفق على الاتجاه أولًا.
 - اجعل التغييرات صغيرة ومركّزة. اشرح *السبب* في طلب الدمج (pull request).
 - يجب أن تجتاز شيفرة Rust الأوامر `cargo fmt --all --check` و`cargo clippy --workspace --all-targets -- -D warnings` و`cargo test --workspace`.
+- عند تغيير `vox-trust-core` أو شيفرة ملفات المفاتيح في أداة سطر الأوامر: شغّل `cargo mutants -p vox-trust-core` (أو `-p vox-trust-cli -f crates/vox-trust-cli/src/keyfile.rs`). الطفرة التي لم تُكتشف تحتاج إلى اختبار، أو إن كانت لا يمكن أن تغيّر السلوك، إلى مدخل مع السبب في `.cargo/mutants.toml`. ويجب أن يبقى `scripts/coverage.sh` فوق حده الأدنى.
 - التغييرات في صيغة التبادل (wire format) أو في النتائج تتطلب أيضًا: تحديث المواصفة، وإعادة توليد المتجهات (`cargo run -p vox-trust-core --example gen_vectors`)، وتشغيل `python3 tools/check_vectors.py --strict`، وفي تغييرات web/WASM تشغيل `scripts/build-web.sh && node --test tests/node/wasm.test.mjs && node tests/browser/demo.mjs`.
 - لا تضف ادعاءات لا يستطيع المشروع إثباتها. إذا قالت جملة "يثبت" أو "يضمن" فإنها تحتاج إلى بند في نموذج التهديدات.
 - التزم بـ[مدونة السلوك](../../CODE_OF_CONDUCT.md).

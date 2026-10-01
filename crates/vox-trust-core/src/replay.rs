@@ -20,8 +20,11 @@ pub enum ReplayVerdict {
     Stale,
 }
 
+/// The reference clock-skew tolerance for live audio, in minutes (spec section 4).
+pub const DEFAULT_SKEW_MINUTES: u16 = 10;
+
 /// Tracks the last accepted counter per key.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ReplayGuard {
     skew_minutes: u16,
     last: HashMap<u32, u16>,
@@ -37,6 +40,13 @@ pub fn serial_after(a: u16, b: u16) -> bool {
 pub fn minute_distance(a: u16, b: u16) -> u16 {
     let d = a.wrapping_sub(b);
     d.min(d.wrapping_neg())
+}
+
+impl Default for ReplayGuard {
+    /// A guard with the reference tolerance, [`DEFAULT_SKEW_MINUTES`].
+    fn default() -> Self {
+        ReplayGuard::new(DEFAULT_SKEW_MINUTES)
+    }
 }
 
 impl ReplayGuard {
@@ -245,5 +255,18 @@ mod tests {
         let mut l = FailureLimiter::new(1, 0);
         l.record_failure(5);
         assert!(l.allow(5));
+    }
+
+    #[test]
+    fn default_guard_uses_the_reference_skew() {
+        let mut g = ReplayGuard::default();
+        assert_eq!(
+            g.check(1, 1, 100, Some(100 + DEFAULT_SKEW_MINUTES)),
+            ReplayVerdict::Fresh
+        );
+        assert_eq!(
+            g.check(1, 2, 100, Some(100 + DEFAULT_SKEW_MINUTES + 1)),
+            ReplayVerdict::Stale
+        );
     }
 }

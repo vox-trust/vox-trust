@@ -7,7 +7,7 @@ import { createServer } from "node:http";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
 import { encodeWav } from "../../web/vox-trust.js";
 
@@ -30,7 +30,13 @@ const server = createServer((req, res) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const base = `http://127.0.0.1:${server.address().port}/`;
 
-const browser = await chromium.launch();
+// BROWSER=chromium (default), firefox or webkit (the engine behind Safari).
+const engines = { chromium, firefox, webkit };
+const engineName = process.env.BROWSER || "chromium";
+const engine = engines[engineName];
+if (!engine) throw new Error(`unknown BROWSER ${engineName}`);
+console.log(`browser: ${engineName}`);
+const browser = await engine.launch();
 const problems = [];
 let passed = 0;
 const step = async (name, fn) => {

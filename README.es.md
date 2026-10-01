@@ -60,10 +60,12 @@ Dos modos: **círculo** (personas que se conocen, secreto compartido) y **públi
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.3.0 vox-trust-cli
 
-vox-trust keygen me.key
+vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
 vox-trust verify sealed.wav --circle-key me.key          # exit code 0 = verified
 ```
+
+`keygen` protege la clave con una frase de contraseña (Argon2id y XChaCha20-Poly1305) y la pide cada vez que se usa la clave. En scripts, usa `--passphrase-file` o la variable `VOX_TRUST_PASSPHRASE`; `--plain` escribe una clave sin protección.
 
 Edita una sola muestra de `sealed.wav` y verifica de nuevo: el código de salida pasa a ser 3 y se imprime el fragmento alterado. Códigos de salida: 0 verificado, 1 sin sello, 2 aviso, 3 alerta.
 
@@ -102,8 +104,13 @@ Los atacantes, las afirmaciones y las debilidades encontradas hasta ahora (inclu
 | Vectores de prueba publicados | Sellos y manifiestos idénticos byte a byte en [`spec/test-vectors/`](spec/test-vectors) | incluido arriba |
 | Verificación cruzada en Python | `tools/check_vectors.py` reconstruye cada vector a partir del texto de la especificación (biblioteca estándar, más `cryptography` para Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly de extremo a extremo | El módulo compilado reproduce los vectores byte a byte, maneja entradas basura y no pierde memoria | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
-| Navegador real | La página de la demo en Chromium headless: sellado, seis ataques, fijación de clave pública, accesibilidad, ancho de teléfono, modo oscuro | `node tests/browser/demo.mjs` |
+| Navegador real | La página de la demo en Chromium, Firefox y WebKit headless: sellado, seis ataques, fijación de clave pública, accesibilidad, ancho de teléfono, modo oscuro | `BROWSER=firefox node tests/browser/demo.mjs` |
 | Fuzzing | Todo parser de entrada no confiable, con invariantes (el audio sellado siempre verifica, cualquier bit de muestra alterado se detecta en el fragmento correcto, el texto de emparejamiento tiene una sola forma) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
+| Cobertura | Proporción de líneas de Rust que ejecutan las pruebas; la CI falla por debajo del 96 % | `scripts/coverage.sh` |
+| Pruebas de mutación | Cambia operadores y valores de retorno de `vox-trust-core` y del código de archivos de clave, uno a la vez, y comprueba que alguna prueba falla; los pocos cambios que no pueden alterar el comportamiento están listados con el motivo en `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core` |
+| Dependencias | Vulnerabilidades conocidas, licencias, orígenes | `cargo deny check` |
+
+La CI ejecuta las pruebas de Rust en Linux, macOS y Windows.
 
 La verificación en Python la escribió el mismo autor, así que es una verificación cruzada, no una implementación independiente. [Una implementación independiente es lo que la especificación todavía necesita.](docs/ROADMAP.md)
 

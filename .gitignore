@@ -6,3 +6,4 @@
 .vscode/
 /web/vox_trust.wasm
 node_modules/
+*.cdx.json

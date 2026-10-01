@@ -60,10 +60,12 @@
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.3.0 vox-trust-cli
 
-vox-trust keygen me.key
+vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
 vox-trust verify sealed.wav --circle-key me.key          # exit code 0 = verified
 ```
+
+`keygen` 会用口令保护密钥（Argon2id 与 XChaCha20-Poly1305），每次使用密钥时都会询问口令。在脚本中可使用 `--passphrase-file` 或环境变量 `VOX_TRUST_PASSPHRASE`；`--plain` 会生成不受保护的密钥。
 
 修改 `sealed.wav` 中的任意一个采样点后再次验证：退出码变为 3，并打印出被改动的片段。退出码：0 已验证，1 无签章，2 警告，3 警报。
 
@@ -102,8 +104,13 @@ assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 | 已发布的测试向量 | [`spec/test-vectors/`](spec/test-vectors) 中逐字节一致的签章与清单 | 已包含在上一项中 |
 | Python 交叉校验 | `tools/check_vectors.py` 依据规范文本重建每一个向量（标准库，Ed25519 另需 `cryptography`） | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly 端到端 | 编译后的模块逐字节复现测试向量，能处理垃圾输入，且不泄漏内存 | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
-| 真实浏览器 | 在无头 Chromium 中测试演示页面：签章、六种攻击、公钥固定、无障碍、手机宽度、深色模式 | `node tests/browser/demo.mjs` |
+| 真实浏览器 | 在无头 Chromium、Firefox 和 WebKit 中测试演示页面：签章、六种攻击、公钥固定、无障碍、手机宽度、深色模式 | `BROWSER=firefox node tests/browser/demo.mjs` |
 | 模糊测试 | 所有解析不可信输入的代码，并检查不变量（签章后的音频总能通过验证，任何被翻转的采样位都能在正确的分段中被发现，配对文本只有一种形式） | `cd fuzz && cargo +nightly fuzz run verify_wav` |
+| 覆盖率 | 测试执行到的 Rust 代码行比例；低于 96 % 时 CI 失败 | `scripts/coverage.sh` |
+| 变异测试 | 逐一修改 `vox-trust-core` 和密钥文件代码中的运算符与返回值，并检查是否有测试失败；少数不会改变行为的修改连同原因列在 `.cargo/mutants.toml` 中 | `cargo mutants -p vox-trust-core` |
+| 依赖 | 已知漏洞、许可证、来源 | `cargo deny check` |
+
+CI 在 Linux、macOS 和 Windows 上运行 Rust 测试。
 
 Python 校验由同一位作者编写，因此它是交叉校验，而不是独立实现。[规范仍然需要的正是一个独立实现。](docs/ROADMAP.md)
 

@@ -569,4 +569,19 @@ mod tests {
             assert_eq!(Pairing::decode(&text).unwrap().encode().unwrap(), text);
         }
     }
+
+    #[test]
+    fn errors_have_distinct_messages() {
+        let all = [
+            PairingError::BadPrefix,
+            PairingError::BadFormat,
+            PairingError::BadKey,
+            PairingError::BadLabel,
+        ]
+        .map(|e| e.to_string());
+        for (i, a) in all.iter().enumerate() {
+            assert!(!a.is_empty());
+            assert!(all[i + 1..].iter().all(|b| a != b));
+        }
+    }
 }

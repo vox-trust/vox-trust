@@ -68,10 +68,16 @@
 ```sh
 cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.3.0 vox-trust-cli
 
-vox-trust keygen me.key
+vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
 vox-trust verify sealed.wav --circle-key me.key          # exit code 0 = verified
 ```
+
+<div dir="rtl">
+
+يحمي `keygen` المفتاح بعبارة مرور (Argon2id وXChaCha20-Poly1305) ويطلبها كلما استُخدم المفتاح. في السكربتات استخدم `--passphrase-file` أو المتغير `VOX_TRUST_PASSPHRASE`؛ ويكتب `--plain` مفتاحًا غير محمي.
+
+</div>
 
 <div dir="rtl">
 
@@ -116,8 +122,13 @@ assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 | متجهات الاختبار المنشورة | أختام وبيانات وصفية مطابقة بايتًا ببايت في [`spec/test-vectors/`](spec/test-vectors) | مشمولة أعلاه |
 | تحقق متقاطع بلغة Python | يعيد `tools/check_vectors.py` بناء كل متجه من نص المواصفة (المكتبة القياسية، إضافة إلى `cryptography` لـ Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly من الطرف إلى الطرف | تعيد الوحدة المُصرَّفة إنتاج المتجهات بايتًا ببايت، وتتعامل مع المدخلات العشوائية، ولا تسرّب الذاكرة | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
-| متصفح حقيقي | صفحة العرض التجريبي في Chromium بلا واجهة: الختم، وست هجمات، وتثبيت المفتاح العام، وإمكانية الوصول، وعرض الهاتف، والوضع الداكن | `node tests/browser/demo.mjs` |
+| متصفح حقيقي | صفحة العرض التجريبي في Chromium وFirefox وWebKit بلا واجهة: الختم، وست هجمات، وتثبيت المفتاح العام، وإمكانية الوصول، وعرض الهاتف، والوضع الداكن | `BROWSER=firefox node tests/browser/demo.mjs` |
 | الاختبار العشوائي (fuzzing) | كل محلل لمدخلات غير موثوقة، مع ثوابت تُفحص (الصوت المختوم يُتحقق منه دائمًا، وأي بت عينة مقلوب يُكتشف في المقطع الصحيح، ونص الاقتران له صيغة واحدة فقط) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
+| التغطية | نسبة أسطر Rust التي تنفذها الاختبارات؛ يفشل CI تحت 96 % | `scripts/coverage.sh` |
+| اختبار الطفرات | يغيّر العوامل والقيم المُعادة في `vox-trust-core` وشيفرة ملفات المفاتيح، واحدًا تلو الآخر، ويتأكد من فشل اختبار ما؛ والتغييرات القليلة التي لا يمكن أن تغيّر السلوك مدرجة مع السبب في `.cargo/mutants.toml` | `cargo mutants -p vox-trust-core` |
+| الاعتماديات | الثغرات المعروفة، والتراخيص، والمصادر | `cargo deny check` |
+
+يشغّل CI اختبارات Rust على Linux وmacOS وWindows.
 
 كُتب تحقق Python على يد المؤلف نفسه، لذا فهو تحقق متقاطع وليس تنفيذًا مستقلًا. [التنفيذ المستقل هو ما لا تزال المواصفة بحاجة إليه.](docs/ROADMAP.md)
 

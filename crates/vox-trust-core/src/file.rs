@@ -470,6 +470,15 @@ fn digests(pcm: &[u8], channels: u16, chunk_frames: u32) -> Vec<[u8; 32]> {
         .collect()
 }
 
+/// Chunks needed for `n_frames` frames of `chunk_frames` each (non-zero), at most
+/// [`MAX_CHUNKS`].
+fn chunk_count(n_frames: u64, chunk_frames: u32) -> Result<u32, FileError> {
+    u32::try_from(n_frames.div_ceil(u64::from(chunk_frames)))
+        .ok()
+        .filter(|&n| n <= MAX_CHUNKS)
+        .ok_or(FileError::TooManyChunks)
+}
+
 /// Seals a WAV file: appends (or replaces) the `VOXT` manifest chunk.
 pub fn seal_wav(
     wav_bytes: &[u8],
@@ -484,10 +493,7 @@ pub fn seal_wav(
     if n_frames == 0 {
         return Err(FileError::EmptyAudio);
     }
-    let n_chunks = n_frames.div_ceil(u64::from(params.chunk_frames));
-    if n_chunks > u64::from(MAX_CHUNKS) {
-        return Err(FileError::TooManyChunks);
-    }
+    let n_chunks = chunk_count(n_frames, params.chunk_frames)?;
     let (mode, key_id) = match signer {
         Signer::Circle { key_id, .. } => (Mode::Circle, key_id),
         Signer::Public { seed } => (Mode::Public, public_key_id(&crypto::ed25519_public(seed))),
@@ -502,7 +508,7 @@ pub fn seal_wav(
         bits: wav.bits_per_sample,
         n_frames,
         chunk_frames: params.chunk_frames,
-        n_chunks: n_chunks as u32,
+        n_chunks,
     };
     let mut signed = Vec::with_capacity(HEADER_LEN + DIGEST_LEN * n_chunks as usize);
     signed.extend_from_slice(&header.encode());
@@ -1045,6 +1051,87 @@ mod tests {
     }
 
     #[test]
+    fn chunk_count_allows_exactly_max_chunks() {
+        let max = u64::from(MAX_CHUNKS);
+        assert_eq!(chunk_count(max, 1), Ok(MAX_CHUNKS));
+        assert_eq!(chunk_count(max * 4 - 3, 4), Ok(MAX_CHUNKS));
+        assert_eq!(chunk_count(max + 1, 1), Err(FileError::TooManyChunks));
+        assert_eq!(chunk_count(u64::MAX, 1), Err(FileError::TooManyChunks));
+    }
+
+    fn header(n_frames: u64, chunk_frames: u32, n_chunks: u32) -> Header {
+        Header {
+            mode: Mode::Circle,
+            key_id: 1,
+            created_unix: 2,
+            counter: 3,
+            sample_rate: 8000,
+            channels: 1,
+            bits: 16,
+            n_frames,
+            chunk_frames,
+            n_chunks,
+        }
+    }
+
+    #[test]
+    fn header_decode_bounds() {
+        let max = u64::from(MAX_CHUNKS);
+        // Exactly the header length, and exactly MAX_CHUNKS chunks, are accepted.
+        let at_limit = header(max * 3, 3, MAX_CHUNKS);
+        assert_eq!(Header::decode(&at_limit.encode()), Ok(at_limit.clone()));
+        let short = &at_limit.encode()[..HEADER_LEN - 1];
+        assert_eq!(Header::decode(short), Err(Reason::Malformed));
+        // One chunk over the limit, even when consistent with the frame count.
+        let over = header((max + 1) * 3, 3, MAX_CHUNKS + 1);
+        assert_eq!(Header::decode(&over.encode()), Err(Reason::Malformed));
+        // No frames and no chunks; a count that does not match the frames; zero-size chunks.
+        for bad in [header(0, 3, 0), header(10, 3, 3), header(10, 0, 1)] {
+            assert_eq!(Header::decode(&bad.encode()), Err(Reason::Malformed));
+        }
+    }
+
+    #[test]
+    fn debug_output_never_shows_secret_keys() {
+        assert_eq!(
+            format!("{:?}", circle_signer()),
+            "Circle { key: \"[REDACTED]\", key_id: 16909060 }"
+        );
+        assert_eq!(
+            format!("{:?}", Signer::Public { seed: &SEED }),
+            "Public { seed: \"[REDACTED]\" }"
+        );
+        let pinned = public_key(&SEED);
+        let trust = Trust {
+            circle: Some((0x0102_0304, &KEY)),
+            pinned_public: Some(&pinned),
+        };
+        assert_eq!(
+            format!("{trust:?}"),
+            format!(
+                "Trust {{ circle: Some((16909060, \"[REDACTED]\")), pinned_public: Some(\"{}\") }}",
+                to_hex(&pinned)
+            )
+        );
+    }
+
+    #[test]
+    fn errors_have_messages() {
+        for e in [
+            FileError::Wav(WavError::TooShort),
+            FileError::ZeroChunkFrames,
+            FileError::EmptyAudio,
+            FileError::TooManyChunks,
+        ] {
+            assert!(!e.to_string().is_empty(), "{e:?}");
+        }
+        assert_eq!(
+            FileError::Wav(WavError::TooShort).to_string(),
+            WavError::TooShort.to_string()
+        );
+    }
+
+    #[test]
     fn report_json_shape() {
         let sealed = seal_wav(&sample(100, 1), circle_signer(), params(25)).unwrap();
         let mut tampered = sealed.clone();
@@ -1054,8 +1141,12 @@ mod tests {
         assert!(json.starts_with("{\"check\":\"invalid\",\"reason\":\"modified\""));
         assert!(json.contains("\"modified_chunks\":[0]"));
         assert!(json.contains("\"key_id\":\"01020304\""));
+        assert!(json.contains("\"created_unix\":1700000000,\"counter\":7,"));
+        assert!(json.contains("\"chunk_frames\":25,\"n_chunks\":4,"));
         let absent = verify(&sample(10, 1), circle_trust()).to_json();
         assert!(absent.contains("\"check\":\"absent\""));
         assert!(absent.contains("\"mode\":null"));
+        assert!(absent.contains("\"created_unix\":null,\"counter\":null,"));
+        assert!(absent.contains("\"chunk_frames\":null,\"n_chunks\":null,"));
     }
 }

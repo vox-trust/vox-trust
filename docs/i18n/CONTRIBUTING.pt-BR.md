@@ -15,6 +15,7 @@ O projeto é um rascunho v0.x, então as contribuições mais úteis agora são 
 - Abra uma issue antes de uma mudança grande, para acertar a direção primeiro.
 - Mantenha as mudanças pequenas e focadas. Explique o *porquê* no pull request.
 - O código Rust deve passar em `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` e `cargo test --workspace`.
+- Mudanças no `vox-trust-core` ou no código de arquivo de chave da CLI: rode `cargo mutants -p vox-trust-core` (ou `-p vox-trust-cli -f crates/vox-trust-cli/src/keyfile.rs`). Um mutante não pego precisa de um teste ou, se não puder mudar o comportamento, de uma entrada com o motivo em `.cargo/mutants.toml`. O `scripts/coverage.sh` deve continuar acima do piso.
 - Mudanças no formato de transmissão (wire format) ou nos veredictos também exigem: a especificação, vetores regenerados (`cargo run -p vox-trust-core --example gen_vectors`), `python3 tools/check_vectors.py --strict` e, para mudanças em web/WASM, `scripts/build-web.sh && node --test tests/node/wasm.test.mjs && node tests/browser/demo.mjs`.
 - Não acrescente afirmações que o projeto não consegue sustentar. Se uma frase diz "prova" ou "garante", ela precisa de uma entrada no modelo de ameaças.
 - Siga o [código de conduta](../../CODE_OF_CONDUCT.md).

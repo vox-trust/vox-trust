@@ -33,6 +33,15 @@ impl Drop for Dir {
 fn run(args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_vox-trust"))
         .args(args)
+        .env_remove("VOX_TRUST_PASSPHRASE")
+        .output()
+        .unwrap()
+}
+
+fn run_with_passphrase(args: &[&str], passphrase: &str) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_vox-trust"))
+        .args(args)
+        .env("VOX_TRUST_PASSPHRASE", passphrase)
         .output()
         .unwrap()
 }
@@ -75,9 +84,10 @@ fn pcm16_wav(channels: u16, rate: u32, pcm: &[u8]) -> Vec<u8> {
     out
 }
 
+/// A plain key (fast; most tests are not about key protection).
 fn keygen(dir: &Dir, name: &str) -> String {
     let path = dir.path(name);
-    let out = run(&["keygen", &path]);
+    let out = run(&["keygen", &path, "--plain"]);
     assert_eq!(code(&out), 0, "{}", err(&out));
     path
 }
@@ -89,7 +99,7 @@ fn keygen_writes_64_hex_and_refuses_to_overwrite() {
     let content = fs::read_to_string(&key).unwrap();
     assert_eq!(content.trim().len(), 64);
     assert!(content.trim().bytes().all(|b| b.is_ascii_hexdigit()));
-    let again = run(&["keygen", &key]);
+    let again = run(&["keygen", &key, "--plain"]);
     assert_eq!(code(&again), 73);
     assert_eq!(
         fs::read_to_string(&key).unwrap(),
@@ -509,4 +519,110 @@ fn seal_with_force_keeps_the_mode_of_the_replaced_file() {
         fs::metadata(&out).unwrap().permissions().mode() & 0o777,
         0o640
     );
+}
+
+#[test]
+fn protected_key_round_trip() {
+    let dir = Dir::new();
+    let key = dir.path("p.key");
+    let plain = dir.path("plain.key");
+    let out = run_with_passphrase(&["keygen", &key], "correct horse battery");
+    assert_eq!(code(&out), 0, "{}", err(&out));
+    let content = fs::read_to_string(&key).unwrap();
+    assert!(
+        content.starts_with("vox-trust-key:1:argon2id:m=65536,t=3,p=4:"),
+        "{content}"
+    );
+
+    // The same seal and verify flow works with the protected key.
+    let (clip, sealed) = (dir.path("a.wav"), dir.path("s.wav"));
+    write_clip(&clip);
+    let out = run_with_passphrase(
+        &["seal", &clip, &sealed, "--mode", "circle", "--key", &key],
+        "correct horse battery",
+    );
+    assert_eq!(code(&out), 0, "{}", err(&out));
+    let out = run_with_passphrase(
+        &["verify", &sealed, "--circle-key", &key],
+        "correct horse battery",
+    );
+    assert_eq!(code(&out), 0, "{}{}", text(&out), err(&out));
+
+    // pubkey from the protected key equals pubkey from the same secret in plain form.
+    let out = run_with_passphrase(&["pubkey", &key], "correct horse battery");
+    assert_eq!(code(&out), 0, "{}", err(&out));
+    let public = text(&out);
+    let other = run(&["keygen", &plain, "--plain"]);
+    assert_eq!(code(&other), 0);
+    assert_ne!(text(&run(&["pubkey", &plain])), public);
+}
+
+#[test]
+fn wrong_or_missing_passphrase() {
+    let dir = Dir::new();
+    let key = dir.path("p.key");
+    assert_eq!(
+        code(&run_with_passphrase(&["keygen", &key], "right one")),
+        0
+    );
+    let out = run_with_passphrase(&["pubkey", &key], "wrong one");
+    assert_eq!(code(&out), 77, "{}", err(&out));
+    assert!(err(&out).contains("wrong passphrase"), "{}", err(&out));
+    let out = run_with_passphrase(&["pubkey", &key], "");
+    assert_eq!(code(&out), 64);
+    assert!(err(&out).contains("empty"), "{}", err(&out));
+}
+
+#[test]
+fn passphrase_file_wins_over_the_environment() {
+    let dir = Dir::new();
+    let (key, pass) = (dir.path("p.key"), dir.path("pass.txt"));
+    fs::write(&pass, "from the file\nsecond line is ignored\n").unwrap();
+    let out = run_with_passphrase(&["keygen", &key, "--passphrase-file", &pass], "from env");
+    assert_eq!(code(&out), 0, "{}", err(&out));
+    assert_eq!(
+        code(&run_with_passphrase(&["pubkey", &key], "from the file")),
+        0
+    );
+    assert_eq!(
+        code(&run_with_passphrase(&["pubkey", &key], "from env")),
+        77
+    );
+    let out = run(&["pubkey", &key, "--passphrase-file", &pass]);
+    assert_eq!(code(&out), 0, "{}", err(&out));
+}
+
+#[test]
+fn protect_converts_a_plain_key_once() {
+    let dir = Dir::new();
+    let plain = keygen(&dir, "plain.key");
+    let protected = dir.path("protected.key");
+    let out = run_with_passphrase(&["protect", &plain, &protected], "pw for protect");
+    assert_eq!(code(&out), 0, "{}", err(&out));
+    let a = text(&run(&["pubkey", &plain]));
+    let b = text(&run_with_passphrase(
+        &["pubkey", &protected],
+        "pw for protect",
+    ));
+    assert_eq!(a, b, "same secret");
+    // Never overwrites, and refuses to protect twice.
+    assert_eq!(
+        code(&run_with_passphrase(&["protect", &plain, &protected], "x")),
+        73
+    );
+    let again = dir.path("again.key");
+    assert_eq!(
+        code(&run_with_passphrase(&["protect", &protected, &again], "x")),
+        65
+    );
+}
+
+#[test]
+fn plain_and_passphrase_file_conflict() {
+    let dir = Dir::new();
+    let (key, pass) = (dir.path("k.key"), dir.path("pass.txt"));
+    fs::write(&pass, "pw\n").unwrap();
+    let out = run(&["keygen", &key, "--plain", "--passphrase-file", &pass]);
+    assert_eq!(code(&out), 64);
+    assert!(fs::metadata(&key).is_err(), "nothing written");
 }

@@ -71,6 +71,8 @@ def check_seal_vectors():
     data = load("seal-v0.json")
     for v in data["circle_key_ids"]:
         check(circle_key_id(bytes.fromhex(v["key"])) == v["key_id"], f"circle key id {v['key'][:8]}")
+    for v in data["coarse_times"]:
+        check((v["unix_seconds"] // 60) % 65536 == v["time"], f"coarse time {v['unix_seconds']}")
     for v in data["packing"]:
         packed = pack_seal(v["version"], v["mode"], v["key_id"], v["counter"], v["time"], v["tag"])
         check(packed.hex() == v["bytes"], f"seal packing {v['name']}")

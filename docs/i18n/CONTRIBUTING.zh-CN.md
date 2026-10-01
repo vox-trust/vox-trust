@@ -15,6 +15,7 @@
 - 做大的改动之前先开 issue，先对齐方向。
 - 改动要小而聚焦。在 pull request 中说明*为什么*这样改。
 - Rust 代码必须通过 `cargo fmt --all --check`、`cargo clippy --workspace --all-targets -- -D warnings` 和 `cargo test --workspace`。
+- 修改 `vox-trust-core` 或命令行的密钥文件代码时：运行 `cargo mutants -p vox-trust-core`（或 `-p vox-trust-cli -f crates/vox-trust-cli/src/keyfile.rs`）。未被捕获的变异体需要补一个测试；若它不可能改变行为，则在 `.cargo/mutants.toml` 中注明原因。`scripts/coverage.sh` 必须保持在下限之上。
 - 修改线路格式（wire format）或结论判定，还需要：更新规范、重新生成测试向量（`cargo run -p vox-trust-core --example gen_vectors`）、运行 `python3 tools/check_vectors.py --strict`；涉及 web/WASM 的改动还需运行 `scripts/build-web.sh && node --test tests/node/wasm.test.mjs && node tests/browser/demo.mjs`。
 - 不要加入项目无法支撑的说法。如果某句话写了“证明”或“保证”，就需要在威胁模型中有对应条目。
 - 遵守[行为准则](../../CODE_OF_CONDUCT.md)。

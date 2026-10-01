@@ -1,6 +1,6 @@
 # Vox Trust Protocol: specification (DRAFT 0.1)
 
-> **Status: draft, unstable, unreviewed by anyone but the author.** Version 0.1 specifies **file mode** completely and has a reference implementation with test vectors. An **experimental in-band carrier** (an audio watermark meant to let a seal survive re-encoding) is built and measured (section 10.2) but did not pass the gate for use, and in-band seals are not bound to the audio (10.3). Nothing here is a security guarantee. Every item marked *TBD* is genuinely undecided.
+> **Status: draft 0.2, unreviewed by anyone but the author.** It specifies **file mode** completely, with a reference implementation and test vectors; the version-0 file-mode format is a **release candidate**: frozen unless a review finds a flaw, and any incompatible change will get a new version number (section 13). An **experimental in-band carrier** (an audio watermark meant to let a seal survive re-encoding) is built and measured (section 10.2) but did not pass the gate for use, and in-band seals are not bound to the audio (10.3). Nothing here is a security guarantee. Every item marked *TBD* is genuinely undecided.
 
 The key words "MUST", "SHOULD" and "MAY" are used as in RFC 2119, but in a draft they describe intent, not conformance.
 
@@ -46,10 +46,14 @@ A seal is **102 bits**, packed most-significant-bit first into **13 bytes**; the
 | `mode` | 2 | `0` = circle, `1` = public, `2`-`3` reserved. |
 | `key_id` | 32 | Identifies which secret or key the verifier should use. |
 | `counter` | 16 | Per-key counter that increases with each seal. |
-| `time` | 16 | Coarse time, in minutes since a fixed epoch, modulo 2^16. *Epoch TBD.* |
+| `time` | 16 | Coarse time: `floor(unix_seconds / 60) mod 2^16`, minutes since the Unix epoch (1970-01-01T00:00:00Z) modulo 65536. It wraps every 65,536 minutes (about 45.5 days). |
 | `tag` | 32 | Authentication tag (section 5). |
 
 The tag covers `version | mode | key_id | counter | time` encoded as fixed-width big-endian bytes (1+1+4+2+2 = 10 bytes).
+
+**Counter and time rules.**
+- A signer MUST increase `counter` by at least 1 for every seal it makes under a key, MUST keep it across restarts, and MUST NOT reuse a value. After 65535 it continues at 0; verifiers compare counters with serial-number arithmetic (section 5). A counter may start again from 0 only with a new key.
+- `time` comes from the signer's clock in UTC. For **live** audio a verifier SHOULD reject a seal whose `time` is more than its clock-skew tolerance away from its own clock, measured on the 2^16 circle (the reference default is 10 minutes; it SHOULD NOT exceed 60). For **recorded** audio an old `time` is expected: verifiers show it but do not reject on it.
 
 ## 5. Circle mode
 
@@ -84,8 +88,8 @@ offset  size  field
 4       1     version (0)
 5       1     mode (0 circle, 1 public)
 6       4     key_id (public mode: first 4 bytes of SHA-256(public key))
-10      8     created_unix
-18      4     counter
+10      8     created_unix   (seconds since the Unix epoch, UTC, signer's clock)
+18      4     counter        (per key, increases with each sealed file)
 22      4     sample_rate
 26      2     channels
 28      2     bits_per_sample (16)
@@ -102,6 +106,8 @@ offset  size  field
 The manifest is stored in a RIFF chunk with id `VOXT`, appended after the other chunks. Files with more than one `VOXT`, `fmt ` or `data` chunk are rejected (ambiguity is where attacks hide). Only 16-bit integer PCM is supported in version 0. **Only the audio format fields and the PCM samples are authenticated**; other chunks (for example metadata) are not. Precisely, *Valid* covers the format tag, channel count, sample rate, bits per sample and the PCM bytes of `data`; it does not cover `byte_rate`, extra bytes in `fmt `, other chunks or chunk order. A WAV file is also rejected if bytes follow the end of the RIFF container, if the RIFF size does not match the chunks exactly (including pad bytes), or if any size exceeds 32 bits.
 
 Ed25519 verification MUST be strict (reject malleable and small-order encodings).
+
+`created_unix` and `counter` are authenticated but **informational** in file mode: a recorded file is legitimately verified many times and long after it was made, so verifiers display them and MUST NOT reject a file for its age or for a counter they have seen before. Signers SHOULD still increase the counter for every file, which lets a user notice two different files claiming the same counter.
 
 ### 6.3 Verification procedure
 
@@ -214,11 +220,28 @@ See the [threat model](THREAT-MODEL.md). In short: the design assumes watermarks
 
 `tools/check_vectors.py` re-implements all of this **from this text only**, using Python's standard library (plus the `cryptography` package for Ed25519), and shares no code with the Rust crate. A mismatch means this text and the implementation disagree. It is written by the same author, so it is a cross-check, **not** an independent implementation by a third party, which this specification still needs.
 
-## 13. Open questions
+## 13. Versioning, stability and registries
+
+**Version 0** is the format described in this document: the seal layout (section 4), the circle tag and key identifier (section 5), the file manifest (section 6) and the pairing text (section 9). Its file-mode parts are a release candidate. Rules:
+
+- Any change that makes a conforming verifier reject a conforming seal, or accept a different one, is incompatible and MUST use a new version number, new domain-separation strings (`vox-trust/<version>/...`) and new test vectors.
+- Verifiers MUST reject versions they do not implement (file mode: *Invalid*, reason `unsupported_version`), never guess.
+- Reserved values and bits MUST be zero when sealing and MUST be rejected when verifying.
+
+| Registry | Values in version 0 |
+|---|---|
+| Seal and manifest `version` | `0` = this document; `1` to `15` (seal) or `1` to `255` (manifest) unassigned |
+| `mode` | `0` circle, `1` public, `2` and `3` reserved |
+| Manifest magic and RIFF chunk id | `VOXT` |
+| Domain-separation strings | `vox-trust/0/key-id`, `vox-trust/0/circle-seal\0`, `vox-trust/0/file-circle\0`, `vox-trust/0/file-public\0` |
+| Pairing text prefix | `voxtrust:0:` |
+| Carriers | `stdm-1` (experimental, section 10.2) |
+
+## 14. Open questions
 
 1. **Content binding for in-band seals** (copy attack, section 10).
 2. Public-mode in-band pointer: how a short in-band payload locates a signed manifest, and why a 32-bit pointer must never carry trust (a second preimage costs about 2^32 work).
-3. Time epoch, clock-skew tolerance and counter reset behaviour.
+3. ~~Time epoch, clock-skew tolerance and counter reset behaviour~~: decided in section 4 (version 0).
 4. Live audio: delayed key disclosure (TESLA-style, RFC 4082) to keep seals small.
 5. Window size versus carrier capacity: measured for stdm-1 (6.4 s for 102 bits; 9.6 s is more robust through Opus). A carrier for AMR-WB and other model-based speech codecs is open.
 6. How an *Alert* for a missing seal is presented without causing panic or false confidence.

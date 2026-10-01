@@ -24,7 +24,7 @@ pub mod seal;
 pub mod wav;
 
 pub use policy::{decide, ContactState, SealCheck, Verdict};
-pub use seal::{DecodeError, EncodeError, Mode, Seal, SEAL_BITS, SEAL_BYTES};
+pub use seal::{coarse_time, DecodeError, EncodeError, Mode, Seal, SEAL_BITS, SEAL_BYTES};
 
 /// Lower-case hexadecimal encoding, used by reports and test vectors.
 pub fn to_hex(bytes: &[u8]) -> String {
