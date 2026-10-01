@@ -384,13 +384,9 @@ impl Manifest {
             return Err(Reason::Malformed);
         }
         let digests = bytes[HEADER_LEN..signed_len]
-            .chunks_exact(DIGEST_LEN)
-            .map(|c| {
-                let mut d = [0u8; 32];
-                d.copy_from_slice(c);
-                d
-            })
-            .collect();
+            .as_chunks::<DIGEST_LEN>()
+            .0
+            .to_vec();
         let tail = &bytes[signed_len..];
         let auth = match header.mode {
             Mode::Circle => {

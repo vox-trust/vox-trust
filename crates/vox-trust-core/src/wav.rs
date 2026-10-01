@@ -138,7 +138,8 @@ pub fn parse(bytes: &[u8]) -> Result<Wav<'_>, WavError> {
                 }
             }
             id if *id == MANIFEST_CHUNK_ID => {
-                if manifest.replace(chunk.data).is_some() {
+                let duplicate = manifest.replace(chunk.data).is_some();
+                if duplicate {
                     return Err(WavError::MultipleManifests);
                 }
             }
