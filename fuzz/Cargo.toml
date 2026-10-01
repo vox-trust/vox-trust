@@ -1,0 +1,54 @@
+[package]
+name = "vox-trust-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+vox-trust-core = { path = "../crates/vox-trust-core" }
+
+# Kept out of the main workspace: fuzzing needs a nightly toolchain.
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "wav_parse"
+path = "fuzz_targets/wav_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "verify_wav"
+path = "fuzz_targets/verify_wav.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "seal_roundtrip"
+path = "fuzz_targets/seal_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pairing"
+path = "fuzz_targets/pairing.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "seal_bytes"
+path = "fuzz_targets/seal_bytes.rs"
+test = false
+doc = false
+bench = false

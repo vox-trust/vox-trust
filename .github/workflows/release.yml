@@ -1,0 +1,154 @@
+name: Release
+
+# Builds the command-line tool for Linux, macOS and Windows plus the WebAssembly demo,
+# publishes SHA-256 checksums and build-provenance attestations, and creates the Git tag
+# and GitHub Release. Run it from the Actions tab ("Run workflow", tag e.g. v0.2.0) or by
+# pushing a tag. The tag must match the version in Cargo.toml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release, e.g. v0.2.0 (must match Cargo.toml)"
+        required: true
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  check:
+    name: Check version and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Tag matches Cargo.toml and CHANGELOG
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name == "vox-trust-cli") | .version')
+          echo "Cargo.toml: $version, tag: $TAG"
+          [ "$TAG" = "v$version" ] || { echo "::error::tag $TAG does not match Cargo.toml version $version"; exit 1; }
+          grep -q "^## \[$version\]" CHANGELOG.md || { echo "::error::CHANGELOG.md has no section for $version"; exit 1; }
+      - name: Test
+        run: cargo test --workspace --locked
+
+  cli:
+    name: CLI (${{ matrix.name }})
+    needs: check
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { name: x86_64-linux, os: ubuntu-latest, exe: vox-trust, archive: tar.gz }
+          - { name: aarch64-macos, os: macos-latest, exe: vox-trust, archive: tar.gz }
+          - { name: x86_64-windows, os: windows-latest, exe: vox-trust.exe, archive: zip }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Build
+        run: cargo build --release --locked -p vox-trust-cli
+      - name: Package
+        run: |
+          name="vox-trust-${TAG}-${{ matrix.name }}"
+          mkdir -p "stage/$name" dist
+          cp "target/release/${{ matrix.exe }}" LICENSE NOTICE README.md CHANGELOG.md "stage/$name/"
+          cd stage
+          if [ "${{ matrix.archive }}" = zip ]; then
+            7z a -tzip "../dist/$name.zip" "$name" > /dev/null
+          else
+            tar -czf "../dist/$name.tar.gz" "$name"
+          fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+
+  wasm:
+    name: WebAssembly and demo
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Build
+        run: scripts/build-web.sh
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp web/vox_trust.wasm "dist/vox_trust-${TAG}.wasm"
+          tar -czf "dist/vox-trust-demo-${TAG}.tar.gz" -C web index.html demo.css demo.js vox-trust.js vox_trust.wasm i18n
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wasm
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    needs: [cli, wasm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${TAG#v}"
+          awk -v v="$version" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          cat >> notes.md <<'EOF'
+
+          ---
+          **Status:** a v0.x draft, **not audited**. Sealed files survive only bit-exact copies; the audio watermark carrier is not built yet. Do not rely on this to protect anyone. See the [roadmap](https://github.com/vox-trust/vox-trust/blob/main/docs/ROADMAP.md) and the [threat model](https://github.com/vox-trust/vox-trust/blob/main/spec/THREAT-MODEL.md).
+
+          **Verify a download:** `sha256sum -c SHA256SUMS --ignore-missing`, and check its build provenance with `gh attestation verify <file> --repo vox-trust/vox-trust`.
+          EOF
+      - name: Create the tag and the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::error::release $TAG already exists"; exit 1
+          fi
+          gh release create "$TAG" dist/* \
+            --target "$GITHUB_SHA" \
+            --title "Vox Trust $TAG" \
+            --notes-file notes.md

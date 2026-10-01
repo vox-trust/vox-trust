@@ -103,6 +103,7 @@ assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 | Python 交叉校验 | `tools/check_vectors.py` 依据规范文本重建每一个向量（标准库，Ed25519 另需 `cryptography`） | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly 端到端 | 编译后的模块逐字节复现测试向量，能处理垃圾输入，且不泄漏内存 | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
 | 真实浏览器 | 在无头 Chromium 中测试演示页面：签章、六种攻击、公钥固定、无障碍、手机宽度、深色模式 | `node tests/browser/demo.mjs` |
+| 模糊测试 | 所有解析不可信输入的代码，并检查不变量（签章后的音频总能通过验证，任何被翻转的采样位都能在正确的分段中被发现，配对文本只有一种形式） | `cd fuzz && cargo +nightly fuzz run verify_wav` |
 
 Python 校验由同一位作者编写，因此它是交叉校验，而不是独立实现。[规范仍然需要的正是一个独立实现。](docs/ROADMAP.md)
 
@@ -127,6 +128,7 @@ crates/
 web/         浏览器演示（发布于 vox-trust.github.io/demo/）
 tests/       Node（WebAssembly）与浏览器测试
 tools/       独立的向量校验
+fuzz/        模糊测试目标（cargo-fuzz）与种子输入
 scripts/     构建与发布辅助脚本
 docs/        路线图
 ```

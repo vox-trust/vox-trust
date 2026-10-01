@@ -103,6 +103,7 @@ Atacantes, alegações e as fraquezas encontradas até agora (incluindo uma que 
 | Verificação cruzada em Python | `tools/check_vectors.py` reconstrói cada vetor a partir do texto da especificação (biblioteca padrão, mais `cryptography` para Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly de ponta a ponta | O módulo compilado reproduz os vetores byte a byte, lida com entrada inválida e não vaza memória | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
 | Navegador real | A página da demo no Chromium headless: selagem, seis ataques, fixação de chave pública, acessibilidade, largura de celular, modo escuro | `node tests/browser/demo.mjs` |
+| Fuzzing | Todo parser de entrada não confiável, com invariantes (áudio selado sempre verifica, qualquer bit de amostra alterado é achado no trecho certo, o texto de pareamento tem uma só forma) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
 
 A verificação em Python foi escrita pelo mesmo autor, portanto é uma verificação cruzada, não uma implementação independente. [Uma implementação independente é o que a especificação ainda precisa.](docs/ROADMAP.md)
 
@@ -127,6 +128,7 @@ crates/
 web/         a demo no navegador (publicada em vox-trust.github.io/demo/)
 tests/       testes Node (WebAssembly) e de navegador
 tools/       verificação independente dos vetores
+fuzz/        alvos de fuzzing (cargo-fuzz) e entradas-semente
 scripts/     auxiliares de build e publicação
 docs/        roteiro
 ```

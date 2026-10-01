@@ -13,7 +13,7 @@ Thanks for looking. The project is a v0.x draft, so the most useful contribution
 - Open an issue before a large change, so the direction is agreed first.
 - Keep changes small and focused. Explain the *why* in the pull request.
 - Rust code must pass `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace`.
-- Changes to the wire format or verdicts also need: the spec, regenerated vectors (`cargo run -p vox-trust-core --example gen_vectors`), `python3 tools/check_vectors.py --strict`, and for web/WASM changes `scripts/build-web.sh && node --test tests/node/*.mjs && node tests/browser/demo.mjs`.
+- Changes to the wire format or verdicts also need: the spec, regenerated vectors (`cargo run -p vox-trust-core --example gen_vectors`), `python3 tools/check_vectors.py --strict`, and for web/WASM changes `scripts/build-web.sh && node --test tests/node/*.mjs && node tests/browser/demo.mjs`. Parser changes: run the fuzz targets in `fuzz/` (`cargo +nightly fuzz run <target>`) for a few minutes.
 - Do not add claims the project cannot back up. If a sentence says "proves" or "guarantees", it needs a threat-model entry.
 - Follow the [code of conduct](CODE_OF_CONDUCT.md).
 

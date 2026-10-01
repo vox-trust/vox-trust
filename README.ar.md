@@ -117,6 +117,7 @@ assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 | تحقق متقاطع بلغة Python | يعيد `tools/check_vectors.py` بناء كل متجه من نص المواصفة (المكتبة القياسية، إضافة إلى `cryptography` لـ Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly من الطرف إلى الطرف | تعيد الوحدة المُصرَّفة إنتاج المتجهات بايتًا ببايت، وتتعامل مع المدخلات العشوائية، ولا تسرّب الذاكرة | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
 | متصفح حقيقي | صفحة العرض التجريبي في Chromium بلا واجهة: الختم، وست هجمات، وتثبيت المفتاح العام، وإمكانية الوصول، وعرض الهاتف، والوضع الداكن | `node tests/browser/demo.mjs` |
+| الاختبار العشوائي (fuzzing) | كل محلل لمدخلات غير موثوقة، مع ثوابت تُفحص (الصوت المختوم يُتحقق منه دائمًا، وأي بت عينة مقلوب يُكتشف في المقطع الصحيح، ونص الاقتران له صيغة واحدة فقط) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
 
 كُتب تحقق Python على يد المؤلف نفسه، لذا فهو تحقق متقاطع وليس تنفيذًا مستقلًا. [التنفيذ المستقل هو ما لا تزال المواصفة بحاجة إليه.](docs/ROADMAP.md)
 
@@ -143,6 +144,7 @@ crates/
 web/         العرض التجريبي في المتصفح (منشور على vox-trust.github.io/demo/)
 tests/       اختبارات Node (WebAssembly) واختبارات المتصفح
 tools/       التحقق المستقل من المتجهات
+fuzz/        أهداف الاختبار العشوائي (cargo-fuzz) ومدخلات البذور
 scripts/     مساعدات البناء والنشر
 docs/        خارطة الطريق
 ```

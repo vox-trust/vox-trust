@@ -100,7 +100,8 @@ Attackers, claims and the weaknesses found so far (including one that is still u
 | Published test vectors | Byte-exact seals and manifests in [`spec/test-vectors/`](spec/test-vectors) | included above |
 | Cross-check in Python | `tools/check_vectors.py` rebuilds every vector from the spec text (standard library, plus `cryptography` for Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly end to end | The compiled module reproduces the vectors byte for byte, handles garbage input, and does not leak memory | `scripts/build-web.sh && node --test tests/node/*.mjs` |
-| Real browser | The demo page in headless Chromium: sealing, six attacks, public-key pinning, accessibility, phone width, dark mode | `node tests/browser/demo.mjs` |
+| Real browser | The demo page in headless Chromium: sealing, six attacks, public-key pinning, five languages, accessibility, phone width, dark mode | `node tests/browser/demo.mjs` |
+| Fuzzing | Every parser of untrusted input, with invariants (sealed audio always verifies, any flipped sample bit is found in the right chunk, pairing text has one form) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
 
 The Python check is written by the same author, so it is a cross-check, not an independent implementation. [An independent implementation is what the spec still needs.](docs/ROADMAP.md)
 
@@ -125,6 +126,7 @@ crates/
 web/         the browser demo (published at vox-trust.github.io/demo/)
 tests/       Node (WebAssembly) and browser tests
 tools/       independent vector check
+fuzz/        fuzz targets (cargo-fuzz) and seed inputs
 scripts/     build and publish helpers
 docs/        roadmap
 ```

@@ -1,0 +1,45 @@
+name: Fuzz
+
+# Coverage-guided fuzzing of every parser that reads untrusted input (cargo-fuzz / libFuzzer).
+# Short runs on every push and pull request, long runs weekly.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [wav_parse, verify_wav, seal_roundtrip, pairing, seal_bytes]
+    env:
+      SECONDS_PER_TARGET: ${{ github.event_name == 'schedule' && 900 || 45 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: nightly
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Fuzz
+        working-directory: fuzz
+        run: |
+          mkdir -p "corpus/${{ matrix.target }}"
+          cargo +nightly fuzz run -O "${{ matrix.target }}" "corpus/${{ matrix.target }}" "seeds/${{ matrix.target }}" -- \
+            -max_total_time="$SECONDS_PER_TARGET" -max_len=8192
+      - name: Keep the crashing input
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: crash-${{ matrix.target }}
+          path: fuzz/artifacts/

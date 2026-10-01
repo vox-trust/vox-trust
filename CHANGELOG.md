@@ -13,6 +13,8 @@ Second hardening round, five languages and a simpler, better-indexed demo.
 - Negative test vectors (10 malformed or tampered files with expected results), re-implemented in the Python cross-check.
 - `Display`/`as_str` on `SealCheck`, `Verdict`, `Mode`; `Display` on `Reason`.
 - Demo: SEO metadata, no-JavaScript note, visible error when WebAssembly fails to load, plural-aware translations.
+- **Fuzzing:** five cargo-fuzz targets (WAV parser, file verification, seal-then-verify round trip, pairing text, seal bytes), each asserting invariants, not only "no crash"; short runs on every push, long runs weekly.
+- **Release workflow:** the command-line tool for Linux, macOS and Windows, the WebAssembly module and the demo, with `SHA256SUMS` and build-provenance attestations; it creates the tag and the GitHub Release.
 
 ### Changed (breaking for library users)
 - `#[non_exhaustive]` on the public enums and on `Report`; `Pairing`, `Signer` and `Trust` print `[REDACTED]` for keys in `Debug`, and `Pairing` compares keys in constant time; `#![deny(missing_docs)]`.
@@ -23,6 +25,10 @@ Second hardening round, five languages and a simpler, better-indexed demo.
 - CLI no longer says "signed by public key" for a signature that did not verify; no panic when stdout is closed; `seal` cannot replace a file created in a race.
 - Demo: file names are always bidi-isolated and stripped of control/format characters; attacks only use the demo's own sealed audio; stronger input-border contrast.
 - Secrets in CLI buffers and signing keys are zeroized.
+- The minimum-supported-Rust CI job really runs on 1.94 (before, `rust-toolchain.toml` silently made it use stable).
+
+### Infra
+- Every GitHub Action is pinned to a full commit hash.
 
 ## [0.1.1] - 2026-10-01
 
