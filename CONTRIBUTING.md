@@ -1,20 +1,21 @@
 # Contributing to Vox Trust
 
-Thanks for looking. The project is pre-alpha, so the most useful contributions right now are **scrutiny and measurement**, not features.
+Thanks for looking. The project is a v0.x draft, so the most useful contributions right now are **scrutiny and measurement**, not features.
 
 ## Most useful right now
 
 - **Attack the design.** Read [spec/THREAT-MODEL.md](spec/THREAT-MODEL.md) and [spec/SPEC.md](spec/SPEC.md) and open an issue with the flaw, ambiguity or missing attacker.
 - **Measure.** The roadmap's first phase is measuring how audio watermarks survive real phone and app audio paths (Opus, AAC, MP3, AMR-WB, noise suppression, re-recording). Reproducible results are very welcome.
-- **Independent implementations.** A spec is only real when someone other than its author can implement it. Once test vectors exist, a second implementation in another language is the most valuable contribution.
+- **Independent implementations.** A spec is only real when someone other than its author can implement it. Test vectors exist in `spec/test-vectors/`; a second implementation in another language is the most valuable contribution.
 
 ## Ground rules
 
 - Open an issue before a large change, so the direction is agreed first.
 - Keep changes small and focused. Explain the *why* in the pull request.
-- Rust code must pass `cargo fmt --check`, `cargo clippy -- -D warnings` and `cargo test`.
+- Rust code must pass `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace`.
+- Changes to the wire format or verdicts also need: the spec, regenerated vectors (`cargo run -p vox-trust-core --example gen_vectors`), `python3 tools/check_vectors.py --strict`, and for web/WASM changes `scripts/build-web.sh && node --test tests/node/wasm.test.mjs && node tests/browser/demo.mjs`.
 - Do not add claims the project cannot back up. If a sentence says "proves" or "guarantees", it needs a threat-model entry.
-- Be kind. Disagreement about design is fine; contempt is not.
+- Follow the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Licensing of contributions
 

@@ -3,6 +3,7 @@ name = "vox-trust-cli"
 description = "Command-line tool to seal and verify WAV files with the Vox Trust protocol (file mode)"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true

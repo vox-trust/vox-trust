@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a vulnerability (private)
+    url: https://github.com/vox-trust/vox-trust/security/advisories/new
+    about: Do not open a public issue for a way to forge or bypass a seal.

@@ -1,12 +1,15 @@
 [package]
 name = "vox-trust-core"
-description = "Seal layout and trust-policy logic for the Vox Trust protocol (pre-alpha, no cryptography or audio yet)"
+description = "Reference implementation of the Vox Trust protocol: sealed WAV files (HMAC-SHA-256 or Ed25519), seal layout, trust policy. Draft, not audited."
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 readme = "README.md"
+documentation = "https://docs.rs/vox-trust-core"
 keywords = ["voice", "authenticity", "provenance", "deepfake", "protocol"]
 categories = ["cryptography", "multimedia::audio"]
 

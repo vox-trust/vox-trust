@@ -52,7 +52,7 @@ Two modes: **circle** (people who know each other, shared secret) and **public**
 **On the command line:**
 
 ```sh
-cargo install --git https://github.com/vox-trust/vox-trust vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.1.0 vox-trust-cli
 
 vox-trust keygen me.key
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
@@ -64,6 +64,7 @@ Edit a single sample of `sealed.wav` and verify again: the exit code becomes 3 a
 **As a Rust library:**
 
 ```rust
+// A sketch: `wav_bytes` is a 16-bit PCM WAV you already have; run inside a function returning a Result.
 use vox_trust_core::file::{seal_wav, verify_wav, SealParams, Signer, Trust};
 use vox_trust_core::{circle, SealCheck};
 
@@ -93,7 +94,7 @@ Attackers, claims and the weaknesses found so far (including one that is still u
 |---|---|---|
 | Rust unit and integration tests | Seal layout, HMAC and Ed25519 (against RFC 4231 and RFC 8032 vectors), WAV parsing, manifests, tampering, policy, the C interface and the CLI | `cargo test --workspace` |
 | Published test vectors | Byte-exact seals and manifests in [`spec/test-vectors/`](spec/test-vectors) | included above |
-| Independent re-implementation | `tools/check_vectors.py` rebuilds every vector from the spec text with Python's standard library | `python3 tools/check_vectors.py --strict` |
+| Cross-check in Python | `tools/check_vectors.py` rebuilds every vector from the spec text (standard library, plus `cryptography` for Ed25519) | `pip install cryptography && python3 tools/check_vectors.py --strict` |
 | WebAssembly end to end | The compiled module reproduces the vectors byte for byte, handles garbage input, and does not leak memory | `scripts/build-web.sh && node --test tests/node/wasm.test.mjs` |
 | Real browser | The demo page in headless Chromium: sealing, six attacks, public-key pinning, accessibility, phone width, dark mode | `node tests/browser/demo.mjs` |
 

@@ -2,7 +2,12 @@
 //! that carries a file-mode manifest.
 //!
 //! Strictness is deliberate: ambiguity is where attacks hide. Duplicate `fmt `/`data`/`VOXT`
-//! chunks, truncated chunks and unsupported formats are all errors.
+//! chunks, truncated chunks, unsupported formats, trailing bytes after the RIFF container
+//! and a RIFF size that disagrees with the chunks are all errors.
+//!
+//! What a seal covers is narrower than what is parsed here: only the format tag, channel
+//! count, sample rate, bits per sample and the PCM bytes of `data` are authenticated.
+//! `byte_rate`, extra `fmt ` bytes, other chunks and chunk order are not.
 
 use core::fmt;
 
@@ -32,6 +37,13 @@ pub enum WavError {
     BadBlockAlign,
     /// The data length is not a whole number of frames.
     BadDataLength,
+    /// Bytes follow the end of the RIFF container.
+    TrailingBytes,
+    /// The RIFF size and the chunk sizes do not add up (leftover bytes inside the
+    /// container, or a missing pad byte).
+    SizeMismatch,
+    /// A chunk or the whole file would exceed the 4 GiB limit of RIFF.
+    TooLarge,
 }
 
 impl fmt::Display for WavError {
@@ -47,6 +59,9 @@ impl fmt::Display for WavError {
             WavError::UnsupportedFormat => "only 16-bit integer PCM WAV is supported",
             WavError::BadBlockAlign => "inconsistent block alignment",
             WavError::BadDataLength => "data length is not a whole number of frames",
+            WavError::TrailingBytes => "bytes after the end of the RIFF container",
+            WavError::SizeMismatch => "RIFF size does not match the chunks",
+            WavError::TooLarge => "chunk or file larger than 4 GiB",
         })
     }
 }
@@ -104,6 +119,9 @@ pub fn parse(bytes: &[u8]) -> Result<Wav<'_>, WavError> {
         .checked_add(8)
         .filter(|end| *end <= bytes.len() && *end >= 12)
         .ok_or(WavError::TruncatedChunk)?;
+    if end != bytes.len() {
+        return Err(WavError::TrailingBytes);
+    }
 
     let mut chunks = Vec::new();
     let mut pos = 12usize;
@@ -120,6 +138,9 @@ pub fn parse(bytes: &[u8]) -> Result<Wav<'_>, WavError> {
             data: &bytes[start..stop],
         });
         pos = stop + (size & 1);
+    }
+    if pos != end {
+        return Err(WavError::SizeMismatch);
     }
 
     let mut fmt = None;
@@ -160,7 +181,7 @@ pub fn parse(bytes: &[u8]) -> Result<Wav<'_>, WavError> {
     if channels == 0 || usize::from(block_align) != usize::from(channels) * 2 {
         return Err(WavError::BadBlockAlign);
     }
-    if pcm.len() % usize::from(block_align) != 0 {
+    if !pcm.len().is_multiple_of(usize::from(block_align)) {
         return Err(WavError::BadDataLength);
     }
     Ok(Wav {
@@ -173,59 +194,77 @@ pub fn parse(bytes: &[u8]) -> Result<Wav<'_>, WavError> {
     })
 }
 
-fn push_chunk(out: &mut Vec<u8>, id: [u8; 4], data: &[u8]) {
+fn push_chunk(out: &mut Vec<u8>, id: [u8; 4], data: &[u8]) -> Result<(), WavError> {
+    let len = u32::try_from(data.len()).map_err(|_| WavError::TooLarge)?;
     out.extend_from_slice(&id);
-    out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+    out.extend_from_slice(&len.to_le_bytes());
     out.extend_from_slice(data);
     if data.len() % 2 == 1 {
         out.push(0);
     }
+    Ok(())
 }
 
-fn finish_riff(body: Vec<u8>) -> Vec<u8> {
+fn finish_riff(body: Vec<u8>) -> Result<Vec<u8>, WavError> {
+    let riff_size = body
+        .len()
+        .checked_add(4)
+        .and_then(|n| u32::try_from(n).ok())
+        .ok_or(WavError::TooLarge)?;
     let mut out = Vec::with_capacity(body.len() + 12);
     out.extend_from_slice(b"RIFF");
-    out.extend_from_slice(&((body.len() + 4) as u32).to_le_bytes());
+    out.extend_from_slice(&riff_size.to_le_bytes());
     out.extend_from_slice(b"WAVE");
     out.extend_from_slice(&body);
-    out
+    Ok(out)
 }
 
 /// Re-writes a WAV file with `manifest` as its only `VOXT` chunk, appended last.
 ///
-/// All other chunks are kept, in order. Any existing `VOXT` chunk is replaced. Trailing
-/// bytes outside the RIFF container are dropped.
+/// All other chunks are kept, in order. Any existing `VOXT` chunk is replaced. The input
+/// must parse strictly (so it has no trailing bytes); the result is [`WavError::TooLarge`]
+/// if it would not fit in a RIFF container.
 pub fn with_manifest(bytes: &[u8], manifest: &[u8]) -> Result<Vec<u8>, WavError> {
     let wav = parse(bytes)?;
-    let mut body = Vec::with_capacity(bytes.len() + manifest.len() + 16);
+    let mut body = Vec::with_capacity(
+        bytes
+            .len()
+            .saturating_add(manifest.len())
+            .saturating_add(16),
+    );
     for chunk in wav.chunks.iter().filter(|c| c.id != MANIFEST_CHUNK_ID) {
-        push_chunk(&mut body, chunk.id, chunk.data);
+        push_chunk(&mut body, chunk.id, chunk.data)?;
     }
-    push_chunk(&mut body, MANIFEST_CHUNK_ID, manifest);
-    Ok(finish_riff(body))
+    push_chunk(&mut body, MANIFEST_CHUNK_ID, manifest)?;
+    finish_riff(body)
 }
 
 /// Builds a minimal 16-bit PCM WAV file from raw little-endian interleaved sample bytes.
 ///
-/// # Panics
-/// Panics if `channels` is zero or `pcm.len()` is not a whole number of frames.
-pub fn encode_pcm16(channels: u16, sample_rate: u32, pcm: &[u8]) -> Vec<u8> {
-    assert!(channels > 0, "channels must be at least 1");
-    let block_align = channels * 2;
-    assert!(
-        pcm.len().is_multiple_of(usize::from(block_align)),
-        "pcm must be a whole number of frames"
-    );
+/// Fails with [`WavError::BadBlockAlign`] if `channels` is zero or too large,
+/// [`WavError::BadDataLength`] if `pcm` is not a whole number of frames, and
+/// [`WavError::TooLarge`] if a size does not fit in 32 bits.
+pub fn encode_pcm16(channels: u16, sample_rate: u32, pcm: &[u8]) -> Result<Vec<u8>, WavError> {
+    if channels == 0 {
+        return Err(WavError::BadBlockAlign);
+    }
+    let block_align = channels.checked_mul(2).ok_or(WavError::BadBlockAlign)?;
+    if !pcm.len().is_multiple_of(usize::from(block_align)) {
+        return Err(WavError::BadDataLength);
+    }
+    let byte_rate = sample_rate
+        .checked_mul(u32::from(block_align))
+        .ok_or(WavError::TooLarge)?;
     let mut fmt = Vec::with_capacity(16);
     fmt.extend_from_slice(&1u16.to_le_bytes());
     fmt.extend_from_slice(&channels.to_le_bytes());
     fmt.extend_from_slice(&sample_rate.to_le_bytes());
-    fmt.extend_from_slice(&(sample_rate * u32::from(block_align)).to_le_bytes());
+    fmt.extend_from_slice(&byte_rate.to_le_bytes());
     fmt.extend_from_slice(&block_align.to_le_bytes());
     fmt.extend_from_slice(&16u16.to_le_bytes());
     let mut body = Vec::new();
-    push_chunk(&mut body, *b"fmt ", &fmt);
-    push_chunk(&mut body, *b"data", pcm);
+    push_chunk(&mut body, *b"fmt ", &fmt)?;
+    push_chunk(&mut body, *b"data", pcm)?;
     finish_riff(body)
 }
 
@@ -241,7 +280,7 @@ mod tests {
 
     #[test]
     fn encode_then_parse() {
-        let bytes = encode_pcm16(2, 44100, &pcm(10, 2));
+        let bytes = encode_pcm16(2, 44100, &pcm(10, 2)).unwrap();
         let wav = parse(&bytes).unwrap();
         assert_eq!(
             (wav.channels, wav.sample_rate, wav.bits_per_sample),
@@ -254,7 +293,7 @@ mod tests {
 
     #[test]
     fn manifest_is_appended_replaced_and_padded() {
-        let base = encode_pcm16(1, 8000, &pcm(5, 1));
+        let base = encode_pcm16(1, 8000, &pcm(5, 1)).unwrap();
         let once = with_manifest(&base, b"abc").unwrap(); // odd length: padded
         assert_eq!(parse(&once).unwrap().manifest, Some(&b"abc"[..]));
         assert_eq!(once.len() % 2, 0);
@@ -266,14 +305,14 @@ mod tests {
 
     #[test]
     fn other_chunks_are_preserved() {
-        let base = encode_pcm16(1, 8000, &pcm(4, 1));
+        let base = encode_pcm16(1, 8000, &pcm(4, 1)).unwrap();
         // Insert a LIST chunk before `data` by rebuilding: take fmt, add LIST, add data.
         let wav = parse(&base).unwrap();
         let mut body = Vec::new();
-        push_chunk(&mut body, *b"fmt ", wav.chunks[0].data);
-        push_chunk(&mut body, *b"LIST", b"INFOxxxx");
-        push_chunk(&mut body, *b"data", wav.pcm);
-        let with_list = finish_riff(body);
+        push_chunk(&mut body, *b"fmt ", wav.chunks[0].data).unwrap();
+        push_chunk(&mut body, *b"LIST", b"INFOxxxx").unwrap();
+        push_chunk(&mut body, *b"data", wav.pcm).unwrap();
+        let with_list = finish_riff(body).unwrap();
         let sealed = with_manifest(&with_list, b"m").unwrap();
         let reparsed = parse(&sealed).unwrap();
         assert!(reparsed.chunks.iter().any(|c| &c.id == b"LIST"));
@@ -285,7 +324,7 @@ mod tests {
         assert_eq!(parse(b"RIFF").unwrap_err(), WavError::TooShort);
         assert_eq!(parse(&[0u8; 20]).unwrap_err(), WavError::NotRiffWave);
 
-        let good = encode_pcm16(1, 8000, &pcm(4, 1));
+        let good = encode_pcm16(1, 8000, &pcm(4, 1)).unwrap();
         // truncated file
         assert_eq!(
             parse(&good[..good.len() - 3]).unwrap_err(),
@@ -305,46 +344,110 @@ mod tests {
         assert_eq!(parse(&zero).unwrap_err(), WavError::BadBlockAlign);
         // missing data
         let mut body = Vec::new();
-        push_chunk(&mut body, *b"fmt ", parse(&good).unwrap().chunks[0].data);
+        push_chunk(&mut body, *b"fmt ", parse(&good).unwrap().chunks[0].data).unwrap();
         assert_eq!(
-            parse(&finish_riff(body)).unwrap_err(),
+            parse(&finish_riff(body).unwrap()).unwrap_err(),
             WavError::MissingData
         );
     }
 
     #[test]
     fn rejects_duplicate_and_ambiguous_chunks() {
-        let good = encode_pcm16(1, 8000, &pcm(4, 1));
+        let good = encode_pcm16(1, 8000, &pcm(4, 1)).unwrap();
         let wav = parse(&good).unwrap();
         let mut dup_data = Vec::new();
-        push_chunk(&mut dup_data, *b"fmt ", wav.chunks[0].data);
-        push_chunk(&mut dup_data, *b"data", wav.pcm);
-        push_chunk(&mut dup_data, *b"data", wav.pcm);
+        push_chunk(&mut dup_data, *b"fmt ", wav.chunks[0].data).unwrap();
+        push_chunk(&mut dup_data, *b"data", wav.pcm).unwrap();
+        push_chunk(&mut dup_data, *b"data", wav.pcm).unwrap();
         assert_eq!(
-            parse(&finish_riff(dup_data)).unwrap_err(),
+            parse(&finish_riff(dup_data).unwrap()).unwrap_err(),
             WavError::DuplicateChunk
         );
         let mut two_manifests = Vec::new();
-        push_chunk(&mut two_manifests, *b"fmt ", wav.chunks[0].data);
-        push_chunk(&mut two_manifests, *b"data", wav.pcm);
-        push_chunk(&mut two_manifests, MANIFEST_CHUNK_ID, b"a");
-        push_chunk(&mut two_manifests, MANIFEST_CHUNK_ID, b"b");
+        push_chunk(&mut two_manifests, *b"fmt ", wav.chunks[0].data).unwrap();
+        push_chunk(&mut two_manifests, *b"data", wav.pcm).unwrap();
+        push_chunk(&mut two_manifests, MANIFEST_CHUNK_ID, b"a").unwrap();
+        push_chunk(&mut two_manifests, MANIFEST_CHUNK_ID, b"b").unwrap();
         assert_eq!(
-            parse(&finish_riff(two_manifests)).unwrap_err(),
+            parse(&finish_riff(two_manifests).unwrap()).unwrap_err(),
             WavError::MultipleManifests
         );
     }
 
     #[test]
     fn data_must_be_whole_frames() {
-        let good = encode_pcm16(2, 8000, &pcm(4, 2));
+        let good = encode_pcm16(2, 8000, &pcm(4, 2)).unwrap();
         let wav = parse(&good).unwrap();
         let mut body = Vec::new();
-        push_chunk(&mut body, *b"fmt ", wav.chunks[0].data);
-        push_chunk(&mut body, *b"data", &wav.pcm[..wav.pcm.len() - 2]);
+        push_chunk(&mut body, *b"fmt ", wav.chunks[0].data).unwrap();
+        push_chunk(&mut body, *b"data", &wav.pcm[..wav.pcm.len() - 2]).unwrap();
         assert_eq!(
-            parse(&finish_riff(body)).unwrap_err(),
+            parse(&finish_riff(body).unwrap()).unwrap_err(),
             WavError::BadDataLength
         );
+    }
+
+    #[test]
+    fn rejects_trailing_bytes_and_size_mismatches() {
+        let good = encode_pcm16(1, 8000, &pcm(4, 1)).unwrap();
+        let mut trailing = good.clone();
+        trailing.extend_from_slice(b"junk");
+        assert_eq!(parse(&trailing).unwrap_err(), WavError::TrailingBytes);
+        assert_eq!(
+            with_manifest(&trailing, b"m").unwrap_err(),
+            WavError::TrailingBytes
+        );
+
+        // RIFF size smaller than the file: the rest counts as trailing bytes.
+        let mut small = good.clone();
+        let size = u32::from_le_bytes(small[4..8].try_into().unwrap()) - 2;
+        small[4..8].copy_from_slice(&size.to_le_bytes());
+        assert_eq!(parse(&small).unwrap_err(), WavError::TrailingBytes);
+
+        // Leftover bytes inside the container that do not form a chunk header.
+        let mut leftover = good.clone();
+        leftover.extend_from_slice(&[0, 0, 0]);
+        let size = u32::from_le_bytes(leftover[4..8].try_into().unwrap()) + 3;
+        leftover[4..8].copy_from_slice(&size.to_le_bytes());
+        assert_eq!(parse(&leftover).unwrap_err(), WavError::SizeMismatch);
+
+        // Odd-sized last chunk with its pad byte missing.
+        let mut body = Vec::new();
+        push_chunk(&mut body, *b"fmt ", parse(&good).unwrap().chunks[0].data).unwrap();
+        push_chunk(&mut body, *b"data", &pcm(4, 1)).unwrap();
+        push_chunk(&mut body, *b"LIST", b"abc").unwrap();
+        let mut file = finish_riff(body).unwrap();
+        file.pop();
+        let size = u32::from_le_bytes(file[4..8].try_into().unwrap()) - 1;
+        file[4..8].copy_from_slice(&size.to_le_bytes());
+        assert_eq!(parse(&file).unwrap_err(), WavError::SizeMismatch);
+    }
+
+    #[test]
+    fn encoder_returns_errors_instead_of_panicking_or_overflowing() {
+        assert_eq!(
+            encode_pcm16(0, 8000, &[]).unwrap_err(),
+            WavError::BadBlockAlign
+        );
+        assert_eq!(
+            encode_pcm16(u16::MAX, 8000, &[]).unwrap_err(),
+            WavError::BadBlockAlign
+        );
+        assert_eq!(
+            encode_pcm16(2, 8000, &[0; 3]).unwrap_err(),
+            WavError::BadDataLength
+        );
+        // byte_rate = sample_rate * block_align would overflow u32.
+        assert_eq!(
+            encode_pcm16(2, u32::MAX, &[]).unwrap_err(),
+            WavError::TooLarge
+        );
+    }
+
+    #[test]
+    fn finish_riff_rejects_oversized_bodies() {
+        // A zeroed allocation of this size is lazily committed by the OS.
+        let body = vec![0u8; u32::MAX as usize - 2];
+        assert_eq!(finish_riff(body).unwrap_err(), WavError::TooLarge);
     }
 }

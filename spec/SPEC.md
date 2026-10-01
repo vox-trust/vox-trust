@@ -99,7 +99,7 @@ offset  size  field
                   "vox-trust/0/file-public\0" || all bytes above
 ```
 
-The manifest is stored in a RIFF chunk with id `VOXT`, appended after the other chunks. Files with more than one `VOXT`, `fmt ` or `data` chunk are rejected (ambiguity is where attacks hide). Only 16-bit integer PCM is supported in version 0. **Only the audio format fields and the PCM samples are authenticated**; other chunks (for example metadata) are not.
+The manifest is stored in a RIFF chunk with id `VOXT`, appended after the other chunks. Files with more than one `VOXT`, `fmt ` or `data` chunk are rejected (ambiguity is where attacks hide). Only 16-bit integer PCM is supported in version 0. **Only the audio format fields and the PCM samples are authenticated**; other chunks (for example metadata) are not. Precisely, *Valid* covers the format tag, channel count, sample rate, bits per sample and the PCM bytes of `data`; it does not cover `byte_rate`, extra bytes in `fmt `, other chunks or chunk order. A WAV file is also rejected if bytes follow the end of the RIFF container, if the RIFF size does not match the chunks exactly (including pad bytes), or if any size exceeds 32 bits.
 
 Ed25519 verification MUST be strict (reject malleable and small-order encodings).
 
@@ -111,10 +111,12 @@ Ed25519 verification MUST be strict (reject malleable and small-order encodings)
 4. Authenticate:
    - Circle: if the verifier has a key whose `key_id` matches, check the HMAC; mismatch is **Invalid** (bad authenticator). With no matching key: **UnknownKey**.
    - Public: check the signature under the embedded key; failure is **Invalid** (bad signature). A valid signature under a key the verifier has **not pinned** is **UnknownKey**.
-5. Only after step 4 succeeded, compare the format (sample rate, channels, bits, frame count) with the file. A difference is **Invalid** (format changed).
+5. Only after the authenticator itself verified (step 4: the HMAC, or the Ed25519 signature, even under an unpinned key), compare the format (sample rate, channels, bits, frame count) with the file. A difference is **Invalid** (format changed).
 6. Recompute every chunk digest and compare. Differences are **Invalid** (modified) and the differing indices are reported. If all match: **Valid**.
 
-The list of modified chunks is meaningful only when step 4 succeeded; before that it could be forged, so it MUST NOT be presented as fact.
+When the signature is genuine but the key is not pinned, steps 5 and 6 still run and their outcome is reported as *content matches* (yes or no) plus the modified chunk indices, but the result stays **UnknownKey**; it never becomes Valid or Invalid. When the authenticator could not be checked (circle seal without the key) or failed, the manifest could be forged, so *content matches* is no and no chunk list is reported; neither MUST be presented as fact.
+
+*Content matches* under an unpinned key means only "unchanged since whoever holds that key sealed it". It says nothing about who that is, and an attacker can seal altered audio with their own key; verifiers MUST NOT treat it as evidence of authenticity.
 
 ### 6.4 What file mode does not do
 
@@ -127,7 +129,7 @@ The list of modified chunks is meaningful only when step 4 succeeded; before tha
 |---|---|
 | **Valid** | A seal verifies under a key the verifier trusts, and the audio matches it. |
 | **Invalid** | A seal is present but broken, or the audio does not match it. |
-| **UnknownKey** | A well-formed seal exists, but under a key the verifier does not trust. |
+| **UnknownKey** | A well-formed seal exists, but under a key the verifier does not trust. A genuine public-key signature additionally reports whether the audio matches it. |
 | **Absent** | No seal was found. |
 
 ## 8. Trust policy
@@ -140,6 +142,8 @@ The verifier combines the check with what it knows about the claimed speaker:
 | Invalid | **Alert** | **Alert** | **Alert** |
 | UnknownKey | **Unsealed** | **Alert** | **Alert** |
 | Absent | **Unsealed** | **Warning** | **Alert** |
+
+The policy input is the check alone: *content matches* under an unpinned key does not change the verdict, though a UI MAY show it (for example "sealed by an unknown key, audio unchanged" versus "audio altered after sealing").
 
 "Unsealed" never means "fake": a missing seal is expected from anyone who does not use the protocol, and a watermark can be damaged by compression or noise suppression. A seal from a *different key* than the one pinned for a contact is more suspicious than a missing seal, hence **Alert**.
 
@@ -154,7 +158,7 @@ voxtrust:0:circle:<64 hex: the shared secret>[:<label>]
 voxtrust:0:public:<64 hex: the Ed25519 public key>[:<label>]
 ```
 
-The label is optional UTF-8, at most 64 bytes, percent-encoded (everything except `A-Z a-z 0-9 - . _ ~` as `%XX`). A circle pairing text contains a secret and MUST NOT be sent over a network or logged.
+The label is optional, non-empty UTF-8, at most 64 bytes, percent-encoded (everything except `A-Z a-z 0-9 - . _ ~` as `%XX`). Labels MUST NOT contain Unicode categories Cc, Cf, Zl or Zp (control characters, bidi overrides, zero-width and other invisible formatting characters, line and paragraph separators). Each value has exactly one text form, and a parser MUST reject any other: keys are lowercase hexadecimal, `%XX` uses uppercase hexadecimal, unreserved characters are never escaped, and an empty trailing label (`...:`) is invalid. A circle pairing text contains a secret and MUST NOT be sent over a network or logged.
 
 *Key discovery for public mode beyond in-person exchange (DNS, a well-known HTTPS path) is TBD.*
 

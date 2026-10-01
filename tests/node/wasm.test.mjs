@@ -104,6 +104,23 @@ test("passphrase key derivation is deterministic and passphrase-dependent", asyn
   assert.notDeepEqual(await deriveCircleKey("another phrase", "test-salt", 1000), circleKey);
 });
 
+test("the default passphrase work factor is 600000 PBKDF2 iterations", async () => {
+  assert.deepEqual(await deriveCircleKey("pw"), await deriveCircleKey("pw", "vox-trust/0/passphrase", 600000));
+  assert.notDeepEqual(await deriveCircleKey("pw"), await deriveCircleKey("pw", "vox-trust/0/passphrase", 210000));
+});
+
+test("calls that fail inside the module still free their buffers", () => {
+  assert.throws(() => vt.seal(clip, { ...sealOptions, chunkFrames: 0 }), /chunk size/); // warm up
+  vt.verify(vt.seal(clip, sealOptions), trust);
+  const before = vt.memoryBytes();
+  for (let i = 0; i < 200; i++) {
+    assert.throws(() => vt.seal(clip, { ...sealOptions, chunkFrames: 0 }), /chunk size/);
+    assert.throws(() => vt.seal(clip, { ...sealOptions, counter: -1 }), /counter/);
+  }
+  assert.equal(vt.memoryBytes(), before);
+  assert.equal(vt.verify(vt.seal(clip, sealOptions), trust).check, "valid");
+});
+
 test("a sealed clip verifies, the audio is untouched, and the seal travels in the file", () => {
   const sealed = vt.seal(clip, sealOptions);
   const before = wavInfo(clip);

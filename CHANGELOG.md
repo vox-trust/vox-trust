@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project is pre-1.0: anything may change between minor versions.
 
+## [Unreleased]
+
+Hardening after an adversarial review of v0.1.0. Not audited by anyone else.
+
+### Changed (breaking for library users)
+- `wav::encode_pcm16`, `push_chunk` and `finish_riff` return `Result` instead of panicking or wrapping on overflow.
+- `wav::parse` (and so `with_manifest`) rejects bytes after the RIFF end and size mismatches; before, trailing bytes were ignored or silently dropped.
+- `verify_circle` rejects seals whose version is not 0.
+- `WavError` has new variants; `Report` has new fields `authenticator_valid` and `content_matches` (also in the JSON).
+- Pairing text has one canonical form: lowercase hex, canonical percent-escapes, no empty label, and labels with bidi/zero-width/separator characters are rejected.
+- `FailureLimiter` memory is bounded.
+
+### Fixed
+- A valid signature under a not-yet-pinned key now still reports whether the audio matches (`content_matches`), so a verifier can decide to pin on the evidence.
+- CLI: no panic on non-UTF-8 arguments; only regular files are read, with size caps; `seal` refuses to overwrite and writes atomically; `keygen` cleans up on failure; `--help` works on every subcommand.
+- Demo: a stale "Verified" can no longer stay on screen after an error; forged seals with up to a million chunks no longer freeze the page; file pickers work from the keyboard; strict Content-Security-Policy; PBKDF2 raised to 600,000 iterations; download name reflects the verdict; WebAssembly buffers are zeroed and always freed.
+- The WebAssembly build is reproducible (`--locked`, path remapping) and prints its SHA-256.
+
+### Added
+- MSRV (Rust 1.94) and dependency-advisory CI jobs, `--locked` everywhere, Dependabot, issue and PR templates, code of conduct, test-vector README, `rust-toolchain.toml`.
+
 ## [0.1.0] - 2026-10-01
 
 First release with working code. **File mode** works end to end; the in-band audio carrier does not exist yet. Not audited.

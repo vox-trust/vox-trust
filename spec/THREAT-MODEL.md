@@ -43,7 +43,7 @@ If the design and implementation are correct, then:
 | A14 | **Pointer forger** | In public mode, collides a short in-band pointer (about 2^32 work) to make a verifier fetch the wrong manifest. | A short pointer MUST NOT carry trust: the verifier checks the manifest's signature and content digests. |
 | A15 | **Metadata tamperer** | Changes parts of the file that are not authenticated (non-audio chunks). | Only the format fields and PCM samples are authenticated. Treat other chunks as untrusted. |
 | A16 | **Key-id collider** | Uses a 32-bit key identifier collision to confuse key selection. | A key id only selects a key; the authenticator is always checked. |
-| A17 | **Self-signer** | Seals with their own public key and hopes the verifier accepts "a valid signature". | A valid signature under an unpinned key is **UnknownKey**, never Valid; for a pinned contact it is an **Alert**. |
+| A17 | **Self-signer** | Seals with their own public key and hopes the verifier accepts "a valid signature". | A valid signature under an unpinned key is **UnknownKey**, never Valid; for a pinned contact it is an **Alert**. A reported "content matches" under an unpinned key only means the audio is unchanged since that key sealed it; it is not authenticity and does not alter the verdict. |
 
 ## Privacy
 

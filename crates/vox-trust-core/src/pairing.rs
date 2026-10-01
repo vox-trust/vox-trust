@@ -5,8 +5,14 @@
 //! voxtrust:0:public:<64 hex: the Ed25519 public key>[:<label>]
 //! ```
 //!
-//! The label is optional, UTF-8, at most 64 bytes after decoding, and percent-encoded
+//! The label is optional, non-empty, UTF-8, at most 64 bytes after decoding, free of
+//! control and invisible formatting characters (Unicode Cc, Cf, Zl, Zp: bidi overrides,
+//! zero-width characters, line and paragraph separators), and percent-encoded
 //! (everything except `A-Z a-z 0-9 - . _ ~` is written as `%XX`).
+//!
+//! Every value has exactly one text form: keys are lowercase hexadecimal, `%XX` uses
+//! uppercase hexadecimal, and unreserved characters are never escaped. Anything else is
+//! rejected, so two different texts never mean the same pairing.
 //!
 //! **A circle pairing text contains a secret.** Show it only in person, never send it, and
 //! do not keep it in logs or screenshots. A public pairing text is safe to share.
@@ -45,10 +51,10 @@ pub enum PairingError {
     BadPrefix,
     /// Wrong number of fields, or an unknown mode.
     BadFormat,
-    /// The key is not exactly 64 hexadecimal characters.
+    /// The key is not exactly 64 lowercase hexadecimal characters.
     BadKey,
-    /// The label is not valid percent-encoded UTF-8, contains control characters, or is
-    /// longer than [`MAX_LABEL_BYTES`].
+    /// The label is empty, is not canonical percent-encoded UTF-8, contains control or
+    /// invisible formatting characters, or is longer than [`MAX_LABEL_BYTES`].
     BadLabel,
 }
 
@@ -57,7 +63,7 @@ impl fmt::Display for PairingError {
         f.write_str(match self {
             PairingError::BadPrefix => "not a Vox Trust pairing text (version 0)",
             PairingError::BadFormat => "malformed pairing text",
-            PairingError::BadKey => "the key must be 64 hexadecimal characters",
+            PairingError::BadKey => "the key must be 64 lowercase hexadecimal characters",
             PairingError::BadLabel => "the label is invalid or too long",
         })
     }
@@ -65,10 +71,39 @@ impl fmt::Display for PairingError {
 
 impl std::error::Error for PairingError {}
 
+/// Characters of Unicode categories Cc, Cf, Zl and Zp, which can hide or reorder text.
+fn is_forbidden_char(c: char) -> bool {
+    c.is_control()
+        || matches!(
+            c,
+            '\u{00AD}'
+                | '\u{061C}'
+                | '\u{180E}'
+                | '\u{200B}'..='\u{200F}'
+                | '\u{2028}'..='\u{2029}'
+                | '\u{202A}'..='\u{202E}'
+                | '\u{2060}'..='\u{2064}'
+                | '\u{2066}'..='\u{206F}'
+                | '\u{FEFF}'
+        )
+}
+
+/// Checks the rules shared by encoding and decoding.
+fn validate_label(label: &str) -> Result<(), PairingError> {
+    if label.is_empty() || label.len() > MAX_LABEL_BYTES || label.chars().any(is_forbidden_char) {
+        return Err(PairingError::BadLabel);
+    }
+    Ok(())
+}
+
+fn is_unreserved(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~')
+}
+
 fn encode_label(label: &str) -> String {
     let mut out = String::new();
     for byte in label.bytes() {
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
+        if is_unreserved(byte) {
             out.push(byte as char);
         } else {
             out.push_str(&format!("%{byte:02X}"));
@@ -85,13 +120,22 @@ fn decode_label(text: &str) -> Result<String, PairingError> {
         match bytes[i] {
             b'%' => {
                 let hex = text.get(i + 1..i + 3).ok_or(PairingError::BadLabel)?;
-                if !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+                // Canonical form: uppercase hex digits only.
+                if !hex
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'A'..=b'F').contains(&b))
+                {
                     return Err(PairingError::BadLabel);
                 }
-                out.push(u8::from_str_radix(hex, 16).map_err(|_| PairingError::BadLabel)?);
+                let byte = u8::from_str_radix(hex, 16).map_err(|_| PairingError::BadLabel)?;
+                // Canonical form: unreserved characters are never escaped.
+                if is_unreserved(byte) {
+                    return Err(PairingError::BadLabel);
+                }
+                out.push(byte);
                 i += 3;
             }
-            b if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') => {
+            b if is_unreserved(b) => {
                 out.push(b);
                 i += 1;
             }
@@ -99,14 +143,16 @@ fn decode_label(text: &str) -> Result<String, PairingError> {
         }
     }
     let label = String::from_utf8(out).map_err(|_| PairingError::BadLabel)?;
-    if label.len() > MAX_LABEL_BYTES || label.chars().any(char::is_control) {
-        return Err(PairingError::BadLabel);
-    }
+    validate_label(&label)?;
     Ok(label)
 }
 
 fn parse_key(text: &str) -> Result<[u8; 32], PairingError> {
-    if text.len() != 64 || !text.bytes().all(|b| b.is_ascii_hexdigit()) {
+    if text.len() != 64
+        || !text
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
         return Err(PairingError::BadKey);
     }
     let mut key = [0u8; 32];
@@ -126,9 +172,7 @@ impl Pairing {
         };
         let mut out = format!("{PREFIX}{mode}:{}", to_hex(key));
         if let Some(label) = label {
-            if label.len() > MAX_LABEL_BYTES || label.chars().any(char::is_control) {
-                return Err(PairingError::BadLabel);
-            }
+            validate_label(label)?;
             out.push(':');
             out.push_str(&encode_label(label));
         }
@@ -273,5 +317,74 @@ mod tests {
         );
         let text = format!("voxtrust:0:circle:{}:{too_long}", "ab".repeat(32));
         assert_eq!(Pairing::decode(&text), Err(PairingError::BadLabel));
+    }
+
+    #[test]
+    fn rejects_invisible_and_formatting_characters() {
+        let key = "ab".repeat(32);
+        for c in [
+            '\u{200B}', '\u{200E}', '\u{202E}', '\u{2028}', '\u{2029}', '\u{2060}', '\u{2066}',
+            '\u{2069}', '\u{206F}', '\u{FEFF}', '\u{00AD}', '\u{061C}', '\u{180E}', '\u{0085}',
+            '\u{007F}',
+        ] {
+            let label = format!("a{c}b");
+            let pairing = Pairing::Circle {
+                key: KEY,
+                label: Some(label.clone()),
+            };
+            assert_eq!(pairing.encode(), Err(PairingError::BadLabel), "{c:?}");
+            let text = format!("voxtrust:0:circle:{key}:{}", encode_label(&label));
+            assert_eq!(Pairing::decode(&text), Err(PairingError::BadLabel), "{c:?}");
+        }
+        // Ordinary non-ASCII text is fine.
+        let ok = Pairing::Circle {
+            key: KEY,
+            label: Some("Zoë 日本 \u{200D}".replace('\u{200D}', "")),
+        };
+        assert_eq!(Pairing::decode(&ok.encode().unwrap()).unwrap(), ok);
+    }
+
+    #[test]
+    fn rejects_an_empty_label() {
+        let key = "ab".repeat(32);
+        assert_eq!(
+            Pairing::decode(&format!("voxtrust:0:circle:{key}:")),
+            Err(PairingError::BadLabel)
+        );
+        assert_eq!(
+            Pairing::Circle {
+                key: KEY,
+                label: Some(String::new())
+            }
+            .encode(),
+            Err(PairingError::BadLabel)
+        );
+    }
+
+    #[test]
+    fn each_value_has_one_text_form() {
+        let key = "ab".repeat(32);
+        // Uppercase key hex.
+        assert_eq!(
+            Pairing::decode(&format!("voxtrust:0:circle:{}", key.to_uppercase())),
+            Err(PairingError::BadKey)
+        );
+        assert_eq!(
+            Pairing::decode(&format!("voxtrust:0:circle:{}Ab", &key[..62])),
+            Err(PairingError::BadKey)
+        );
+        // Lowercase percent hex, and escaped unreserved characters.
+        for label in ["a%3ab", "%41", "%7e", "%2d", "a%2E"] {
+            assert_eq!(
+                Pairing::decode(&format!("voxtrust:0:circle:{key}:{label}")),
+                Err(PairingError::BadLabel),
+                "{label}"
+            );
+        }
+        // The canonical spellings are accepted and re-encode identically.
+        for label in ["a%3Ab", "A%20b", "x-y.z_~"] {
+            let text = format!("voxtrust:0:circle:{key}:{label}");
+            assert_eq!(Pairing::decode(&text).unwrap().encode().unwrap(), text);
+        }
     }
 }

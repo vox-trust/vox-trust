@@ -8,6 +8,8 @@
 //! MP3 or AAC, resampling, or re-recording changes every sample, so the seal reports the
 //! audio as modified. Surviving that is the job of the (not yet built) watermark carrier.
 //! Only the `fmt ` parameters and the PCM samples are authenticated; other chunks are not.
+//! `Valid` covers exactly: format tag, channels, sample rate, bits per sample, and the PCM
+//! bytes. It does not cover `byte_rate`, extra `fmt ` bytes, other chunks or chunk order.
 //!
 //! Manifest layout (all integers big-endian):
 //!
@@ -205,10 +207,19 @@ pub struct Report {
     /// Chunk count declared by the manifest.
     pub n_chunks: Option<u32>,
     /// The manifest's authenticator verified under a trusted key.
-    ///
-    /// `modified_chunks` is only meaningful when this is true.
     pub authenticated: bool,
-    /// Indices of chunks whose audio no longer matches the manifest.
+    /// The manifest's authenticator is genuine (HMAC under the matching key, or a valid
+    /// Ed25519 signature under the embedded key), whether or not that key is trusted.
+    ///
+    /// `content_matches` and `modified_chunks` are only meaningful when this is true.
+    pub authenticator_valid: bool,
+    /// The audio format and every chunk digest match the manifest. Always `false` unless
+    /// `authenticator_valid`. It says nothing about *who* sealed the file: an
+    /// `UnknownKey` result with `content_matches` means "intact since sealed by an unpinned
+    /// key", not "genuine".
+    pub content_matches: bool,
+    /// Indices of chunks whose audio no longer matches the manifest. Filled only when
+    /// `authenticator_valid` and the format matches; empty otherwise.
     pub modified_chunks: Vec<u32>,
     /// For public mode: the public key embedded in the manifest.
     pub embedded_public_key: Option<[u8; 32]>,
@@ -229,6 +240,8 @@ impl Report {
             chunk_frames: None,
             n_chunks: None,
             authenticated: false,
+            authenticator_valid: false,
+            content_matches: false,
             modified_chunks: Vec::new(),
             embedded_public_key: None,
         }
@@ -254,6 +267,7 @@ impl Report {
                 "{{\"check\":\"{}\",\"reason\":\"{}\",\"mode\":{},\"key_id\":{},",
                 "\"created_unix\":{},\"counter\":{},\"sample_rate\":{},\"channels\":{},",
                 "\"n_frames\":{},\"chunk_frames\":{},\"n_chunks\":{},\"authenticated\":{},",
+                "\"authenticator_valid\":{},\"content_matches\":{},",
                 "\"modified_chunks\":[{}],\"embedded_public_key\":{}}}"
             ),
             check_name(self.check),
@@ -268,6 +282,8 @@ impl Report {
             opt(self.chunk_frames),
             opt(self.n_chunks),
             self.authenticated,
+            self.authenticator_valid,
+            self.content_matches,
             modified,
             opt_str(self.embedded_public_key.map(|k| to_hex(&k))),
         )
@@ -507,6 +523,9 @@ pub fn verify_wav(wav_bytes: &[u8], trust: Trust<'_>) -> Result<Report, FileErro
     report.n_chunks = Some(h.n_chunks);
 
     let signed = &manifest_bytes[..manifest.signed_len];
+    // `trusted` is false only for a valid public-key signature under an unpinned key: the
+    // authenticator is genuine, but the verifier has no reason to believe its holder.
+    let mut trusted = true;
     match &manifest.auth {
         Auth::Circle(tag) => match trust.circle {
             Some((id, key)) if id == h.key_id => {
@@ -516,6 +535,7 @@ pub fn verify_wav(wav_bytes: &[u8], trust: Trust<'_>) -> Result<Report, FileErro
                 }
             }
             _ => {
+                // Without the key nothing in the manifest can be checked: it could be forged.
                 report.check = SealCheck::UnknownKey;
                 report.reason = Reason::UntrustedKey;
                 return Ok(report);
@@ -528,31 +548,39 @@ pub fn verify_wav(wav_bytes: &[u8], trust: Trust<'_>) -> Result<Report, FileErro
                 return Ok(report);
             }
             if trust.pinned_public != Some(key) {
-                report.check = SealCheck::UnknownKey;
-                report.reason = Reason::UntrustedKey;
-                return Ok(report);
+                trusted = false;
             }
         }
     }
-    report.authenticated = true;
+    report.authenticator_valid = true;
+    report.authenticated = trusted;
 
-    if h.sample_rate != wav.sample_rate
-        || h.channels != wav.channels
-        || h.bits != wav.bits_per_sample
-        || h.n_frames != wav.frames()
-    {
-        report.reason = Reason::FormatChanged;
-        return Ok(report);
+    // The authenticator is genuine, so the declared format and digests are too; compare
+    // them with the file even when the key is not trusted.
+    let format_ok = h.sample_rate == wav.sample_rate
+        && h.channels == wav.channels
+        && h.bits == wav.bits_per_sample
+        && h.n_frames == wav.frames();
+    let mut digests_ok = false;
+    if format_ok {
+        let actual = digests(wav.pcm, wav.channels, h.chunk_frames);
+        report.modified_chunks = actual
+            .iter()
+            .zip(&manifest.digests)
+            .enumerate()
+            .filter(|(_, (a, b))| a != b)
+            .map(|(i, _)| i as u32)
+            .collect();
+        digests_ok = report.modified_chunks.is_empty() && actual.len() == manifest.digests.len();
     }
-    let actual = digests(wav.pcm, wav.channels, h.chunk_frames);
-    report.modified_chunks = actual
-        .iter()
-        .zip(&manifest.digests)
-        .enumerate()
-        .filter(|(_, (a, b))| a != b)
-        .map(|(i, _)| i as u32)
-        .collect();
-    if report.modified_chunks.is_empty() && actual.len() == manifest.digests.len() {
+    report.content_matches = format_ok && digests_ok;
+
+    if !trusted {
+        report.check = SealCheck::UnknownKey;
+        report.reason = Reason::UntrustedKey;
+    } else if !format_ok {
+        report.reason = Reason::FormatChanged;
+    } else if digests_ok {
         report.check = SealCheck::Valid;
         report.reason = Reason::None;
     } else {
@@ -578,7 +606,7 @@ mod tests {
     }
 
     fn sample(frames: usize, channels: u16) -> Vec<u8> {
-        wav::encode_pcm16(channels, 8000, &pcm(frames, usize::from(channels)))
+        wav::encode_pcm16(channels, 8000, &pcm(frames, usize::from(channels))).unwrap()
     }
 
     fn params(chunk_frames: u32) -> SealParams {
@@ -644,6 +672,57 @@ mod tests {
         assert_eq!(r.reason, Reason::UntrustedKey);
         assert_eq!(r.embedded_public_key, Some(public));
         assert!(!r.authenticated);
+        assert!(r.authenticator_valid && r.content_matches);
+    }
+
+    #[test]
+    fn unpinned_key_still_reports_content_integrity() {
+        let sealed = seal_wav(&sample(100, 1), Signer::Public { seed: &SEED }, params(25)).unwrap();
+        let none = Trust::default();
+
+        let r = verify(&sealed, none);
+        assert_eq!(r.check, SealCheck::UnknownKey);
+        assert!(r.content_matches && r.modified_chunks.is_empty());
+
+        // Tampered audio under a genuine signature: still UnknownKey, but flagged.
+        let mut tampered = sealed.clone();
+        let at = pcm_offset(&tampered);
+        tampered[at + 2 * 25 * 2 + 4] ^= 0x01;
+        let r = verify(&tampered, none);
+        assert_eq!(
+            (r.check, r.reason),
+            (SealCheck::UnknownKey, Reason::UntrustedKey)
+        );
+        assert!(r.authenticator_valid && !r.authenticated && !r.content_matches);
+        assert_eq!(r.modified_chunks, vec![2]);
+
+        // Changed format: not matching, and no chunk list.
+        let w = wav::parse(&sealed).unwrap();
+        let faster = wav::encode_pcm16(1, 16000, w.pcm).unwrap();
+        let faster = wav::with_manifest(&faster, w.manifest.unwrap()).unwrap();
+        let r = verify(&faster, none);
+        assert_eq!(r.check, SealCheck::UnknownKey);
+        assert!(!r.content_matches && r.modified_chunks.is_empty());
+
+        // Forged signature: nothing is reported as fact.
+        let mut manifest = w.manifest.unwrap().to_vec();
+        let last = manifest.len() - 1;
+        manifest[last] ^= 1;
+        let forged = wav::with_manifest(&tampered, &manifest).unwrap();
+        let r = verify(&forged, none);
+        assert_eq!(r.check, SealCheck::Invalid);
+        assert!(!r.authenticator_valid && !r.content_matches && r.modified_chunks.is_empty());
+    }
+
+    #[test]
+    fn circle_seal_without_the_key_reports_nothing_about_content() {
+        let sealed = seal_wav(&sample(100, 1), circle_signer(), params(25)).unwrap();
+        let mut tampered = sealed;
+        let at = pcm_offset(&tampered);
+        tampered[at + 4] ^= 1;
+        let r = verify(&tampered, Trust::default());
+        assert_eq!(r.check, SealCheck::UnknownKey);
+        assert!(!r.authenticator_valid && !r.content_matches && r.modified_chunks.is_empty());
     }
 
     #[test]
@@ -721,7 +800,7 @@ mod tests {
         let sealed = seal_wav(&sample(100, 1), circle_signer(), params(25)).unwrap();
         let wav = wav::parse(&sealed).unwrap();
         // Rebuild with fewer frames but the same manifest.
-        let shorter = wav::encode_pcm16(1, 8000, &wav.pcm[..wav.pcm.len() - 50]);
+        let shorter = wav::encode_pcm16(1, 8000, &wav.pcm[..wav.pcm.len() - 50]).unwrap();
         let shorter = wav::with_manifest(&shorter, wav.manifest.unwrap()).unwrap();
         let r = verify(&shorter, circle_trust());
         assert_eq!(r.check, SealCheck::Invalid);
@@ -733,7 +812,7 @@ mod tests {
     fn changing_the_sample_rate_is_a_format_change() {
         let sealed = seal_wav(&sample(100, 1), circle_signer(), params(25)).unwrap();
         let wav = wav::parse(&sealed).unwrap();
-        let faster = wav::encode_pcm16(1, 16000, wav.pcm);
+        let faster = wav::encode_pcm16(1, 16000, wav.pcm).unwrap();
         let faster = wav::with_manifest(&faster, wav.manifest.unwrap()).unwrap();
         assert_eq!(
             verify(&faster, circle_trust()).reason,
@@ -745,7 +824,7 @@ mod tests {
     fn stripping_the_manifest_gives_absent() {
         let sealed = seal_wav(&sample(100, 1), circle_signer(), params(25)).unwrap();
         let wav = wav::parse(&sealed).unwrap();
-        let stripped = wav::encode_pcm16(1, 8000, wav.pcm);
+        let stripped = wav::encode_pcm16(1, 8000, wav.pcm).unwrap();
         let r = verify(&stripped, circle_trust());
         assert_eq!(r.check, SealCheck::Absent);
         assert_eq!(r.reason, Reason::NoManifest);
@@ -918,7 +997,12 @@ mod tests {
             FileError::ZeroChunkFrames
         );
         assert_eq!(
-            seal_wav(&wav::encode_pcm16(1, 8000, &[]), circle_signer(), params(4)).unwrap_err(),
+            seal_wav(
+                &wav::encode_pcm16(1, 8000, &[]).unwrap(),
+                circle_signer(),
+                params(4)
+            )
+            .unwrap_err(),
             FileError::EmptyAudio
         );
         assert_eq!(
@@ -926,7 +1010,7 @@ mod tests {
             FileError::Wav(WavError::TooShort)
         );
         let too_many = (MAX_CHUNKS as usize + 1) * 2;
-        let big = wav::encode_pcm16(1, 8000, &vec![0u8; too_many]);
+        let big = wav::encode_pcm16(1, 8000, &vec![0u8; too_many]).unwrap();
         assert_eq!(
             seal_wav(&big, circle_signer(), params(1)).unwrap_err(),
             FileError::TooManyChunks

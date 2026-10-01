@@ -53,7 +53,26 @@ fn write_clip(path: &str) {
     let pcm: Vec<u8> = (0..16000i32)
         .flat_map(|i| (((i * 37) % 20000 - 10000) as i16).to_le_bytes())
         .collect();
-    fs::write(path, wav::encode_pcm16(1, 8000, &pcm)).unwrap();
+    fs::write(path, pcm16_wav(1, 8000, &pcm)).unwrap();
+}
+
+/// A minimal canonical PCM16 WAV, built here so the test does not depend on core's encoder.
+fn pcm16_wav(channels: u16, rate: u32, pcm: &[u8]) -> Vec<u8> {
+    let mut out = Vec::new();
+    out.extend_from_slice(b"RIFF");
+    out.extend_from_slice(&(36 + pcm.len() as u32).to_le_bytes());
+    out.extend_from_slice(b"WAVEfmt ");
+    out.extend_from_slice(&16u32.to_le_bytes());
+    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&channels.to_le_bytes());
+    out.extend_from_slice(&rate.to_le_bytes());
+    out.extend_from_slice(&(rate * u32::from(channels) * 2).to_le_bytes());
+    out.extend_from_slice(&(channels * 2).to_le_bytes());
+    out.extend_from_slice(&16u16.to_le_bytes());
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&(pcm.len() as u32).to_le_bytes());
+    out.extend_from_slice(pcm);
+    out
 }
 
 fn keygen(dir: &Dir, name: &str) -> String {
@@ -275,4 +294,91 @@ fn help_prints_usage_and_exits_zero() {
     let out = run(&["help"]);
     assert_eq!(code(&out), 0);
     assert!(text(&out).contains("EXIT CODES"));
+}
+
+#[test]
+fn subcommand_help_works_and_documents_exit_code_one() {
+    for args in [["verify", "--help"], ["verify", "-h"], ["seal", "--help"]] {
+        let out = run(&args);
+        assert_eq!(code(&out), 0, "{args:?}");
+        assert!(text(&out).contains("Exit code 1 is NOT an error"));
+    }
+}
+
+#[test]
+fn an_option_cannot_be_another_options_value() {
+    let dir = Dir::new();
+    let clip = dir.path("clip.wav");
+    write_clip(&clip);
+    let out = run(&["verify", &clip, "--circle-key", "--json"]);
+    assert_eq!(code(&out), 64);
+    assert!(err(&out).contains("needs a value"));
+}
+
+#[test]
+fn seal_refuses_to_overwrite_or_to_write_over_its_input() {
+    let dir = Dir::new();
+    let (clip, out) = (dir.path("clip.wav"), dir.path("out.wav"));
+    write_clip(&clip);
+    let key = keygen(&dir, "k.key");
+    let seal = |input: &str, output: &str, force: bool| {
+        let mut args = vec!["seal", input, output, "--mode", "circle", "--key", &key];
+        if force {
+            args.push("--force");
+        }
+        run(&args)
+    };
+    let original = fs::read(&clip).unwrap();
+
+    assert_eq!(code(&seal(&clip, &clip, true)), 64, "output == input");
+    assert_eq!(fs::read(&clip).unwrap(), original);
+
+    assert_eq!(code(&seal(&clip, &out, false)), 0);
+    let first = fs::read(&out).unwrap();
+    let refused = seal(&clip, &out, false);
+    assert_eq!(code(&refused), 73);
+    assert!(err(&refused).contains("--force"));
+    assert_eq!(fs::read(&out).unwrap(), first);
+
+    assert_eq!(code(&seal(&clip, &out, true)), 0, "--force replaces");
+    let leftovers: Vec<_> = fs::read_dir(&dir.0)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().ends_with(".tmp"))
+        .collect();
+    assert!(leftovers.is_empty(), "no temp files left behind");
+}
+
+#[test]
+fn only_regular_files_within_the_size_cap_are_read() {
+    let dir = Dir::new();
+    let big_key = dir.path("big.key");
+    fs::write(&big_key, vec![b'a'; 5000]).unwrap();
+    let clip = dir.path("clip.wav");
+    write_clip(&clip);
+    let out = run(&["verify", &clip, "--circle-key", &big_key]);
+    assert_eq!(code(&out), 65);
+    assert!(err(&out).contains("limit"));
+
+    // A directory is not a regular file.
+    let out = run(&["verify", &dir.path("")]);
+    assert_eq!(code(&out), 66);
+    assert!(err(&out).contains("not a regular file"));
+}
+
+#[cfg(unix)]
+#[test]
+fn non_utf8_paths_do_not_panic() {
+    use std::ffi::OsString;
+    use std::os::unix::ffi::OsStringExt;
+    let dir = Dir::new();
+    let mut name = dir.0.clone().into_os_string().into_vec();
+    name.extend_from_slice(b"/bad-\xff.wav");
+    let path = OsString::from_vec(name);
+    let out = Command::new(env!("CARGO_BIN_EXE_vox-trust"))
+        .arg("verify")
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert_eq!(code(&out), 66, "a missing file, not a panic");
 }

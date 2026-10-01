@@ -3,6 +3,7 @@ name = "vox-trust-wasm"
 description = "WebAssembly (C ABI) build of vox-trust-core for the in-browser demo"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true

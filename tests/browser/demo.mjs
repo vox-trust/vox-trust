@@ -171,12 +171,47 @@ await step("public mode: trust on first use, pinning the embedded key", async ()
   await page.waitForFunction(() => document.getElementById("vTitle").textContent === "Verified");
 });
 
-await step("the download link serves a WAV file", async () => {
+await step("the download link serves a WAV file named for the verdict", async () => {
   const href = await page.locator("#download").getAttribute("href");
   assert.match(href, /^blob:/);
   assert.equal(await page.locator("#download").getAttribute("download"), "sealed.wav");
-  const bytes = await page.evaluate(async (url) => Array.from(new Uint8Array(await (await fetch(url)).arrayBuffer()).slice(0, 12)), href);
-  assert.deepEqual(bytes.slice(0, 4), [0x52, 0x49, 0x46, 0x46]); // RIFF
+  // The page CSP (connect-src 'self') blocks fetch(blob:), so use a real download instead.
+  const [download] = await Promise.all([page.waitForEvent("download"), page.click("#download")]);
+  assert.equal(download.suggestedFilename(), "sealed.wav");
+  const chunks = [];
+  for await (const c of await download.createReadStream()) chunks.push(c);
+  assert.deepEqual([...Buffer.concat(chunks).subarray(0, 4)], [0x52, 0x49, 0x46, 0x46]); // RIFF
+});
+
+await step("a tampered file is never offered as sealed.wav", async () => {
+  await page.selectOption("#atkChunk", "1");
+  await page.click('[data-attack="silence"]');
+  await page.waitForFunction(() => document.getElementById("vTitle").textContent.includes("changed"));
+  assert.equal(await page.locator("#download").getAttribute("download"), "unverified.wav");
+  await page.click('[data-attack="reset"]');
+  await page.waitForFunction(() => document.getElementById("vTitle").textContent === "Verified");
+});
+
+await step("a malformed pasted public key gets feedback and does not crash", async () => {
+  await page.fill("#pinned", "zz-not-a-key");
+  await page.press("#pinned", "Tab");
+  await page.waitForFunction(() => document.getElementById("pinInfo").textContent.includes("Not a valid public key"));
+  assert.equal(await page.locator("#pinned").getAttribute("aria-invalid"), "true");
+  assert.notEqual(await title(), "Verified"); // the pinned key is ignored, so a public seal is untrusted
+});
+
+await step("the file pickers are keyboard reachable with a visible focus ring", async () => {
+  await page.focus("#verifyFile");
+  const outline = await page.locator("label.btn:has(#verifyFile)").evaluate((el) => getComputedStyle(el).outlineStyle);
+  assert.notEqual(outline, "none");
+  assert.equal(await page.locator("#verifyFile").evaluate((el) => el.hidden), false);
+});
+
+await step("Forget keys clears the keys and passphrases, and verification stops trusting", async () => {
+  await page.click("#forgetKeys");
+  await page.waitForFunction(() => document.getElementById("vTitle").textContent === "Unsealed");
+  assert.equal(await page.locator("#pinned").inputValue(), "");
+  assert.equal(await page.locator("#verifyPass").inputValue(), "");
 });
 
 await step("every button, input and select has an accessible name", async () => {

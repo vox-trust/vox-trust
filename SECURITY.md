@@ -1,12 +1,16 @@
 # Security policy
 
-Vox Trust is **pre-alpha**. The specification is a draft and the code has not been reviewed or audited. Do not rely on it to protect anyone.
+Vox Trust is **v0.x, a draft**. The specification is not frozen and the code has not been reviewed or audited. Do not rely on it to protect anyone.
+
+**Supported versions:** only the latest release on `main`. **Disclosure:** we aim to acknowledge within 7 days and to publish a fix and advisory within 90 days of a valid report; this is a volunteer project, so these are goals, not guarantees. **Scope:** the code and specification in this repository and the demo at vox-trust.github.io/demo/. Out of scope: attacks that need the victim's key or device (see the threat model).
 
 ## Reporting a vulnerability
 
 Please report vulnerabilities **privately** using GitHub's private vulnerability reporting:
 
 <https://github.com/vox-trust/vox-trust/security/advisories/new>
+
+If that page is not available to you, open a minimal public issue titled "security contact request" **without any details** and a maintainer will arrange a private channel.
 
 Do not open a public issue for a vulnerability. Include what you found, how to reproduce it, and which part of the spec or code is affected. This is a volunteer project: there is no response-time guarantee and no bug bounty yet, but reports are read and credited (if you wish).
 

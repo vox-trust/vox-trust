@@ -89,6 +89,9 @@ pub struct FailureLimiter {
 
 impl FailureLimiter {
     /// Allow at most `max_failures` failures within any `window_secs` seconds.
+    ///
+    /// With `max_failures == 0` nothing is ever allowed. At most `max_failures` timestamps
+    /// are stored, so memory is bounded however many failures are recorded.
     pub fn new(max_failures: u32, window_secs: u64) -> Self {
         FailureLimiter {
             max_failures,
@@ -99,6 +102,7 @@ impl FailureLimiter {
 
     fn expire(&mut self, now: u64) {
         while let Some(&oldest) = self.failures.front() {
+            // `saturating_sub`: a clock that went backwards never ages anything out.
             if now.saturating_sub(oldest) >= self.window_secs {
                 self.failures.pop_front();
             } else {
@@ -116,6 +120,17 @@ impl FailureLimiter {
     /// Records a failed verification at time `now` (seconds).
     pub fn record_failure(&mut self, now: u64) {
         self.expire(now);
+        let cap = self.max_failures as usize;
+        if cap == 0 {
+            return;
+        }
+        // Clamp to the newest stamp seen so the deque stays sorted if the clock went back;
+        // otherwise a stale-looking entry would block expiry of the ones behind it.
+        let now = self.failures.back().map_or(now, |&last| now.max(last));
+        // At the cap the budget is already spent: drop the oldest so the newest window slides.
+        while self.failures.len() >= cap {
+            self.failures.pop_front();
+        }
         self.failures.push_back(now);
     }
 }
@@ -187,5 +202,47 @@ mod tests {
     fn limiter_with_zero_budget_always_refuses() {
         let mut l = FailureLimiter::new(0, 60);
         assert!(!l.allow(0));
+    }
+
+    #[test]
+    fn limiter_memory_is_bounded_by_the_budget() {
+        let mut l = FailureLimiter::new(3, 1_000_000);
+        for t in 0..10_000 {
+            l.record_failure(t);
+        }
+        assert_eq!(l.failures.len(), 3);
+        assert!(!l.allow(10_000));
+    }
+
+    #[test]
+    fn limiter_zero_budget_stores_nothing_and_still_refuses() {
+        let mut l = FailureLimiter::new(0, 60);
+        l.record_failure(5);
+        assert!(l.failures.is_empty());
+        assert!(!l.allow(1_000_000));
+    }
+
+    #[test]
+    fn limiter_survives_a_backwards_clock() {
+        let mut l = FailureLimiter::new(2, 60);
+        l.record_failure(100);
+        l.record_failure(50); // clock jumped back
+        assert!(!l.allow(40));
+        assert!(!l.allow(159)); // both treated as recorded at t=100
+        assert!(l.allow(160));
+        // Recording with an earlier clock never panics and keeps the deque sorted.
+        l.record_failure(0);
+        assert!(l
+            .failures
+            .iter()
+            .zip(l.failures.iter().skip(1))
+            .all(|(a, b)| a <= b));
+    }
+
+    #[test]
+    fn limiter_window_zero_never_blocks() {
+        let mut l = FailureLimiter::new(1, 0);
+        l.record_failure(5);
+        assert!(l.allow(5));
     }
 }

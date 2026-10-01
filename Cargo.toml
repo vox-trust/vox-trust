@@ -5,9 +5,11 @@ members = ["crates/vox-trust-core", "crates/vox-trust-wasm", "crates/vox-trust-c
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.94"
 license = "Apache-2.0"
 repository = "https://github.com/vox-trust/vox-trust"
 authors = ["Roger Oliveira"]
+homepage = "https://vox-trust.github.io"
 
 [profile.release]
 opt-level = "s"

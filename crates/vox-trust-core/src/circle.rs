@@ -50,15 +50,14 @@ impl Seal {
 
     /// Checks the tag of a circle seal in constant time.
     ///
-    /// Returns `false` for any seal that is not a circle seal.
+    /// Returns `false` for any seal that is not a version-0 circle seal.
     pub fn verify_circle(&self, key: &[u8; KEY_LEN]) -> bool {
-        if self.mode != Mode::Circle {
+        if self.mode != Mode::Circle || self.version != 0 {
             return false;
         }
         let expected = seal_tag(key, &self.authenticated_fields());
-        // Compare as bytes without early exit.
-        let diff = expected ^ self.tag;
-        diff == 0
+        // XOR of two 32-bit words, compared once: no data-dependent branch per byte.
+        (expected ^ self.tag) == 0
     }
 }
 
@@ -84,7 +83,6 @@ mod tests {
             Seal { key_id: 43, ..seal },
             Seal { counter: 2, ..seal },
             Seal { time: 1001, ..seal },
-            Seal { version: 1, ..seal },
             Seal {
                 tag: seal.tag ^ 1,
                 ..seal
@@ -92,6 +90,16 @@ mod tests {
         ] {
             assert!(!tampered.verify_circle(&KEY), "{tampered:?}");
         }
+    }
+
+    #[test]
+    fn a_nonzero_version_is_rejected_even_with_a_matching_tag() {
+        let seal = Seal::new_circle(&KEY, 42, 1, 1000);
+        let mut future = Seal { version: 1, ..seal };
+        // Recompute the tag over the version-1 fields: the tag is valid, the version is not.
+        future.tag = seal_tag(&KEY, &future.authenticated_fields());
+        assert!(!future.verify_circle(&KEY));
+        assert!(!Seal { version: 1, ..seal }.verify_circle(&KEY));
     }
 
     #[test]

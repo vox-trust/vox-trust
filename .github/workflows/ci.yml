@@ -20,9 +20,26 @@ jobs:
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Test
-        run: cargo test --workspace
+        run: cargo test --workspace --locked
+
+  msrv:
+    name: Minimum supported Rust (1.94)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94
+      - run: cargo test --workspace --locked
+
+  audit:
+    name: Dependency advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install --locked cargo-audit
+      - run: cargo audit
 
   independent-check:
     name: Independent vector check and WebAssembly

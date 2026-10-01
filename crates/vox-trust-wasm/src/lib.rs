@@ -239,7 +239,7 @@ mod tests {
 
     fn wav() -> Vec<u8> {
         let pcm: Vec<u8> = (0..400i16).flat_map(|s| (s * 50).to_le_bytes()).collect();
-        vox_trust_core::wav::encode_pcm16(1, 8000, &pcm)
+        vox_trust_core::wav::encode_pcm16(1, 8000, &pcm).unwrap()
     }
 
     #[test]

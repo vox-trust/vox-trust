@@ -173,7 +173,7 @@ pub fn file_vectors() -> Value {
         .into_iter()
         .map(|case| {
             let pcm = pcm_bytes(&case.samples);
-            let original = wav::encode_pcm16(case.channels, case.sample_rate, &pcm);
+            let original = wav::encode_pcm16(case.channels, case.sample_rate, &pcm).unwrap();
             let digests = chunk_digests(&pcm, case.channels, case.chunk_frames);
 
             let circle = file::seal_wav(
