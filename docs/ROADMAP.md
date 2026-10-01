@@ -4,17 +4,26 @@ An honest plan with the gates that decide whether to continue. No dates are prom
 
 Legend: ✅ done · 🟡 partly done · ⬜ not started
 
-## Where we are (v0.1.0)
+## Where we are (v0.2.0)
 
-- ✅ Specification draft 0.1: file mode fully specified, in-band seal and carrier interface as draft ([spec/SPEC.md](../spec/SPEC.md))
-- ✅ Threat model draft 0.1, including the author's own adversarial findings ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
-- ✅ `vox-trust-core`: seal layout, circle and public modes, **file mode**, trust policy, replay and rate-limit helpers, pairing text
-- ✅ Published test vectors, and an independent Python re-implementation of them
-- ✅ `vox-trust` command-line tool
-- ✅ WebAssembly build and a **browser demo that really verifies** (file mode), tested in a real browser
-- ✅ Website in English and Portuguese
-- ⬜ **The audio watermark carrier. Without it, seals survive only bit-exact copies.**
-- ⬜ Independent review, independent implementation, and everything that depends on other people
+**Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo or the command line. It is a **v0.x draft, not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
+
+- ⬜ **The audio watermark carrier.** Without it, seals survive only bit-exact copies. Re-encoding (MP3, AAC, WhatsApp voice notes), resampling and re-recording all read as modified. Nothing here has been measured against real codecs.
+- ⬜ **Independent review, an independent implementation, and everything that depends on other people.** Only the author has looked at this code and design (plus automated adversarial reviews, which are not a substitute).
+
+What is done:
+
+- ✅ Specification draft 0.1: file mode fully specified; in-band seal and carrier interface as draft ([spec/SPEC.md](../spec/SPEC.md))
+- ✅ Threat model draft 0.1 with the author's own adversarial findings and explicit non-claims ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
+- ✅ `vox-trust-core`: seal layout, circle (HMAC-SHA-256) and public (Ed25519, strict) modes, **file mode**, trust policy, replay and rate-limit helpers, pairing text; strict WAV parsing; keys redacted from `Debug` and zeroized where the code controls them
+- ✅ Published test vectors including **negative vectors**, byte-exact across Rust, WebAssembly and a Python cross-check (same author, so a cross-check, not independence)
+- ✅ `vox-trust` command-line tool, hardened (regular files only, size caps, atomic non-overwriting `seal`, no panics on odd input)
+- ✅ WebAssembly build (reproducible, no imports) and a browser demo that **really verifies**, in **five languages** (English, Português, Español, 中文, العربية with RTL), tested in a real browser
+- ✅ Website in the same five languages with SEO metadata
+- ✅ CI: format, clippy, tests, docs, minimum supported Rust (1.94), dependency advisories, vectors, WebAssembly, real-browser demo
+- ✅ Two internal adversarial review rounds, with fixes and regression tests
+- 🟡 Release: v0.2.0 is on `main`; the Git tag and GitHub Release still have to be created (the tag push is blocked in the authoring environment)
+- ⬜ Translations reviewed by native speakers (English is the normative text)
 
 ## Principles
 
@@ -65,10 +74,12 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 ## Phase 3: public release
 
-- 🟡 A release with a working demo and the open threat model: **v0.1.0 is out**, without benchmark results (there is no carrier to measure)
+- 🟡 A release with a working demo and the open threat model: **code on `main` as v0.2.0**; tag and GitHub Release pending; no benchmark results (there is no carrier to measure)
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
 - 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
-- ⬜ Private vulnerability reporting tested end to end
+- ⬜ Private vulnerability reporting enabled in the repository settings and tested end to end (SECURITY.md already points to it, with a fallback)
+- ⬜ Fuzzing of the WAV and manifest parsers (the code has no known reachable panic, but that is review, not fuzzing)
+- ⬜ CI actions pinned by commit hash; signed tags; release binaries with checksums and build attestation
 
 **Exit:** the first outside bug reports and reviews are triaged in public.
 
