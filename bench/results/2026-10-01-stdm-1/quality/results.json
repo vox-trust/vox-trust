@@ -1,0 +1,28 @@
+{
+  "params": "Params { lo_bin: 10, hi_bin: 122, tile_bins: 8, tile_frames: 2, columns: 200, sync_every: 6, step_db: 5.0, max_db: 3.5, sync_threshold: 6.0, silence_db: 45.0, valley_db: 30.0, pattern_seed: 8534171955496169729 }",
+  "window_seconds": 6.400,
+  "seals_per_file": 3,
+  "snr_db": 15.91,
+  "segmental_snr_db": 22.27,
+  "rows": [
+    {"condition": "original", "windows": 81, "recovered": 81, "files": 39, "files_with_seal": 39, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.789},
+    {"condition": "resample-44k", "windows": 81, "recovered": 81, "files": 39, "files_with_seal": 39, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.775},
+    {"condition": "trim-1.234s", "windows": 42, "recovered": 42, "files": 39, "files_with_seal": 33, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.960},
+    {"condition": "noise-20db", "windows": 81, "recovered": 0, "files": 39, "files_with_seal": 0, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 2.851},
+    {"condition": "noise-30db", "windows": 81, "recovered": 4, "files": 39, "files_with_seal": 4, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.399},
+    {"condition": "noise-10db", "windows": 81, "recovered": 0, "files": 39, "files_with_seal": 0, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 2.812},
+    {"condition": "mp3-128k", "windows": 81, "recovered": 81, "files": 39, "files_with_seal": 39, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.928},
+    {"condition": "mp3-64k", "windows": 81, "recovered": 81, "files": 39, "files_with_seal": 39, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.438},
+    {"condition": "aac-64k", "windows": 81, "recovered": 79, "files": 39, "files_with_seal": 39, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 4.092},
+    {"condition": "opus-32k", "windows": 81, "recovered": 75, "files": 39, "files_with_seal": 39, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.638},
+    {"condition": "opus-24k", "windows": 81, "recovered": 56, "files": 39, "files_with_seal": 33, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.769},
+    {"condition": "opus-12k", "windows": 81, "recovered": 0, "files": 39, "files_with_seal": 0, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.580},
+    {"condition": "amr-wb-12.65k", "windows": 81, "recovered": 0, "files": 39, "files_with_seal": 0, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.943},
+    {"condition": "amr-wb-23.85k", "windows": 81, "recovered": 14, "files": 39, "files_with_seal": 11, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.676},
+    {"condition": "g722", "windows": 81, "recovered": 67, "files": 39, "files_with_seal": 39, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.613},
+    {"condition": "mp3-128k+opus-24k", "windows": 81, "recovered": 18, "files": 39, "files_with_seal": 16, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 4.031},
+    {"condition": "denoise", "windows": 81, "recovered": 0, "files": 39, "files_with_seal": 0, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.827},
+    {"condition": "echo", "windows": 81, "recovered": 0, "files": 39, "files_with_seal": 0, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.875},
+    {"condition": "tempo+1%", "windows": 81, "recovered": 0, "files": 39, "files_with_seal": 0, "wrong_seals": 0, "false_alarms": 0, "unmarked_files": 14, "max_unmarked_sync_score": 3.756}
+  ]
+}

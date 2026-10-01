@@ -1,6 +1,6 @@
 # Vox Trust Protocol: specification (DRAFT 0.1)
 
-> **Status: draft, unstable, unreviewed by anyone but the author.** Version 0.1 specifies **file mode** completely and has a reference implementation with test vectors. The **in-band carrier** (the audio watermark that would let a seal survive re-encoding) is **not built**; its sections describe intent. Nothing here is a security guarantee. Every item marked *TBD* is genuinely undecided.
+> **Status: draft, unstable, unreviewed by anyone but the author.** Version 0.1 specifies **file mode** completely and has a reference implementation with test vectors. An **experimental in-band carrier** (an audio watermark meant to let a seal survive re-encoding) is built and measured (section 10.2) but did not pass the gate for use, and in-band seals are not bound to the audio (10.3). Nothing here is a security guarantee. Every item marked *TBD* is genuinely undecided.
 
 The key words "MUST", "SHOULD" and "MAY" are used as in RFC 2119, but in a draft they describe intent, not conformance.
 
@@ -25,7 +25,7 @@ Vox Trust lets a speaker's device **seal** audio at the source, and lets anyone 
 | **Seal** | Evidence of authenticity attached to audio: an in-band payload (section 4) or a file manifest (section 6). |
 | **Signer** | The party holding the key that produces seals. |
 | **Verifier** | Any party checking audio for a valid seal. |
-| **Carrier** | The audio watermark technique that would embed and extract an in-band seal (section 10). Not built yet. |
+| **Carrier** | The audio watermark technique that embeds and extracts an in-band seal (section 10). One experimental carrier exists (stdm-1). |
 | **Circle mode** | Signer and verifier share a secret (people who know each other). |
 | **Public mode** | The signer has an Ed25519 key pair; verifiers pin the public key. |
 | **Chunk** | A fixed number of audio frames covered by one digest in file mode. |
@@ -34,7 +34,7 @@ Vox Trust lets a speaker's device **seal** audio at the source, and lets anyone 
 ## 3. Two ways to carry a seal
 
 1. **File mode (specified, implemented).** A manifest travels inside a WAV file as a `VOXT` chunk. It commits to the audio format and to a digest of every chunk, so it shows *which chunks* changed. It survives only **bit-exact copies**: any re-encoding changes every sample.
-2. **In-band mode (draft, not built).** A short seal is embedded in the audio itself by a carrier so it can survive some re-encoding and re-recording. How much it survives is an open measurement question (see the [roadmap](../docs/ROADMAP.md)).
+2. **In-band mode (draft, experimental).** A short seal is embedded in the audio itself by a carrier so it can survive some re-encoding. The first carrier survives common file codecs but not phone-call codecs or noise ([measurements](../bench/results/2026-10-01-stdm-1/README.md)), and in-band seals are open to copying (10.3).
 
 ## 4. In-band seal layout (draft)
 
@@ -120,7 +120,7 @@ When the signature is genuine but the key is not pinned, steps 5 and 6 still run
 
 ### 6.4 What file mode does not do
 
-- It does not survive re-encoding, resampling or re-recording: every chunk reads as modified. That is the carrier's job (not built).
+- It does not survive re-encoding, resampling or re-recording: every chunk reads as modified. That is the carrier's job (experimental, section 10.2).
 - It proves nothing about audio that was never sealed.
 
 ## 7. Verification outcomes
@@ -164,13 +164,45 @@ Labels are **not normalized**: a parser MUST NOT apply Unicode normalization (NF
 
 *Key discovery for public mode beyond in-person exchange (DNS, a well-known HTTPS path) is TBD.*
 
-## 10. Carrier interface (draft, not built)
+## 10. Carrier interface, and the experimental carrier stdm-1
+
+### 10.1 Interface
 
 A carrier embeds and extracts a fixed-size payload in PCM audio. Each carrier declares its **capacity** in bits per second (a 102-bit seal needs `102 / capacity` seconds of audio) and the conditions it was measured under.
 
-A carrier MUST NOT be trusted for authenticity: it only *carries* the seal. A removed or damaged watermark yields *Absent*, never a forged *Valid*.
+A carrier MUST NOT be trusted for authenticity: it only *carries* the seal. A removed or damaged watermark MUST yield *Absent*, never a forged *Valid*. A carrier SHOULD detect its own decoding errors (for example with a CRC), so that a damaged seal reads as *Absent* rather than *Invalid* (which would raise an *Alert*).
 
-**Open problem: copy attacks.** An in-band seal is not bound to the audio content. An attacker holding one genuine sealed recording may be able to estimate the watermark and add it to *different* audio, which would then carry a genuine seal. File mode is not affected (its digests bind the content). Binding in-band seals to content (for example with a robust perceptual fingerprint committed in the tag) is unsolved here. See the threat model, attacker A11.
+### 10.2 stdm-1 (experimental)
+
+> **Experimental.** stdm-1 is the first measured carrier. It did **not** pass the roadmap's Phase 0 gate ([results](../bench/results/2026-10-01-stdm-1/README.md), [decision](../docs/decisions/0001-carrier-phase-0.md)), and because of the copy attack (10.3) an in-band seal MUST NOT be presented to a user as *Verified*. Everything in this subsection may change.
+
+**Method.** Spread-transform dither modulation (Chen and Wornell, IEEE Trans. Information Theory, 2001) on normalised log-magnitude STFT tiles. The reference implementation is `crates/vox-trust-carrier`; all constants below are its defaults.
+
+**Analysis.** Mono audio at 16 kHz (other rates are resampled first). Frames of N = 512 samples every 256 samples, analysis window `w[n] = sin(pi n / N)`. A detector analyses four grids, starting at sample 0, 64, 128 and 192.
+
+**Tiles.** Bins 10 to 121 (312.5 to 3812.5 Hz), in 14 subbands of 8 bins; 2 frames per column. A tile's level `L` is the mean, over its 16 bin-frames, of `10 log10(|X|^2 + phi)`, where `phi = 10^-10` times the largest `|X|^2` of the analysed audio (at least `10^-20`). Its value `v` is `L` minus the mean of its column, minus the mean of the same subband's column-normalised levels in the 2 columns on each side (fewer at the edges, never itself).
+
+**Weights.** With `r(x) = min(max(x / 6, 0), 1)`, a column's energy `E` in dB (`10 log10` of the sum of `|X|^2` over its tiles, plus `phi`), the loudest column energy `E_max` and the loudest tile level of the column `L_max`, a tile's weight is `r(E - (E_max - 45)) * r(L - (L_max - 30))`. Silent columns and deep spectral valleys therefore carry no chips.
+
+**Window and pattern.** One seal per window of 200 columns (6.4 s), 2800 tiles numbered `column * 14 + subband`. The public pattern comes from SplitMix64 seeded with `0x766f782d73733101`, consumed in this order:
+
+1. One draw per tile: sign `+1` if the draw is odd, else `-1`.
+2. A Fisher-Yates shuffle of the tile numbers: for `i` from 2799 down to 1, swap `i` with `draw mod (i + 1)`.
+3. The first `floor(2800 / 6)` shuffled tiles are synchronisation tiles, the rest data tiles. `g = floor(data tiles / 248)` chips per group.
+4. 248 data groups, each drawing a dither (`(draw >> 40) / 2^24`) then a known bit (draw odd); data tile `k` (for `k < 248 g`) joins group `k mod 248`.
+5. `floor(sync tiles / g)` synchronisation groups, drawn and filled the same way from the synchronisation tiles.
+
+A group's **projection** is `P = sum(w s v) / sum(w)` over its chips (undefined if every weight is zero). Its **phase** is `phi = 2 pi (P / D - d)` with step `D = 7` dB and the group's dither `d`: 0 on the lattice of bit 0, pi on the lattice of bit 1.
+
+**Payload.** The information bits are the 102 seal bits (most significant first, without the 2 pad bits) followed by CRC-16/CCITT-FALSE (polynomial 0x1021, initial value 0xFFFF) of the 13 seal bytes. They are encoded with the rate-1/2, constraint-length-7 convolutional code with generators 171 and 133 (octal), terminated with 6 zero bits: 248 coded bits. Coded bit `j` is carried by data group `j`.
+
+**Embedding** (informative). For each window, move every group's projection to the nearest point of its bit's lattice `{(d + b/2 + k) D}` by changing tile levels (the reference applies gains to the STFT bins of each tile, clamped to plus or minus 4.5 dB, and corrects the error over 4 re-analyses). Audio more than one frame (512 samples) after the last whole window is unchanged. Any method that produces the projections is conforming.
+
+**Detection.** For each grid and each start column, the synchronisation score is `Z = sum(cos(phi_k - pi b_k)) / sqrt(K / 2)` over the `K` synchronisation groups with a defined projection (`b_k` their known bits); under no watermark, the dither makes `Z` approximately standard normal. Candidates with `Z >= 6`, at least half a window apart (strongest first), are decoded: soft value `-cos(phi_j)` per coded bit, soft-decision Viterbi, then the CRC. A seal is returned only if the CRC matches; otherwise the window is *Absent*. The seal is then checked as in sections 4 and 5.
+
+### 10.3 Open problem: copy attacks
+
+An in-band seal is not bound to the audio content. Because stdm-1's pattern is public, anyone holding one genuine sealed recording can **read** its seal and **embed it into different audio**, which then carries a genuine seal within the counter/time window. File mode is not affected (its digests bind the content). Binding in-band seals to content (for example with a robust perceptual fingerprint committed in the tag) is unsolved here. See the threat model, attacker A11.
 
 ## 11. Security considerations
 
@@ -188,7 +220,7 @@ See the [threat model](THREAT-MODEL.md). In short: the design assumes watermarks
 2. Public-mode in-band pointer: how a short in-band payload locates a signed manifest, and why a 32-bit pointer must never carry trust (a second preimage costs about 2^32 work).
 3. Time epoch, clock-skew tolerance and counter reset behaviour.
 4. Live audio: delayed key disclosure (TESLA-style, RFC 4082) to keep seals small.
-5. Window size versus carrier capacity (decided by measurement).
+5. Window size versus carrier capacity: measured for stdm-1 (6.4 s for 102 bits; 9.6 s is more robust through Opus). A carrier for AMR-WB and other model-based speech codecs is open.
 6. How an *Alert* for a missing seal is presented without causing panic or false confidence.
 7. Key revocation, and key discovery for public mode.
 8. Alignment with COSE and C2PA for the manifest.

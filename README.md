@@ -15,7 +15,7 @@ An open protocol, with a Rust reference implementation, that seals a human voice
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-informational">
+  <img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -27,7 +27,7 @@ An open protocol, with a Rust reference implementation, that seals a human voice
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-> **Status: v0.1, file mode works. Not audited.** You can seal a WAV file, verify it, and see exactly which seconds were altered, in the [browser demo](https://vox-trust.github.io/demo/) or with the command line. Sealed files survive **only bit-exact copies**. The audio watermark that would survive re-encoding **is not built yet**. Do not use this to protect anyone until it has been reviewed.
+> **Status: v0.3, file mode works. Not audited.** You can seal a WAV file, verify it, and see exactly which seconds were altered, in the [browser demo](https://vox-trust.github.io/demo/) or with the command line. Sealed files survive **only bit-exact copies**. An **experimental** audio watermark that survives MP3, AAC and Opus is built and [measured](bench/results/2026-10-01-stdm-1/README.md), but it fails phone-call codecs and noise, and in-band seals can be copied into other audio, so it gives **no verdicts** yet. Do not use this to protect anyone until it has been reviewed.
 
 ## The problem
 
@@ -56,7 +56,7 @@ Two modes: **circle** (people who know each other, shared secret) and **public**
 **On the command line** (prebuilt binaries for Linux, macOS and Windows, with checksums and build attestations, are on the [releases page](https://github.com/vox-trust/vox-trust/releases/latest); or build from source):
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.2.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.3.0 vox-trust-cli
 
 vox-trust keygen me.key
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
@@ -87,7 +87,7 @@ assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 - It is **not** deepfake detection and **not** voice biometrics.
 - It does **not** prove a speaker is human or is who they claim. It proves that *a key* sealed the audio. A stolen key or a compromised device produces valid seals.
 - "No seal" does **not** mean "fake": compression and noise suppression can erase a watermark.
-- File mode does **not** survive MP3, AAC, resampling or re-recording. That needs the carrier, which does not exist yet.
+- File mode does **not** survive MP3, AAC, resampling or re-recording. That is the carrier's job, and the carrier is experimental (below).
 - It does not protect against an attacker who controls the sender's device.
 
 Attackers, claims and the weaknesses found so far (including one that is still unsolved) are in the [threat model](spec/THREAT-MODEL.md).
@@ -104,6 +104,20 @@ Attackers, claims and the weaknesses found so far (including one that is still u
 | Fuzzing | Every parser of untrusted input, with invariants (sealed audio always verifies, any flipped sample bit is found in the right chunk, pairing text has one form) | `cd fuzz && cargo +nightly fuzz run verify_wav` |
 
 The Python check is written by the same author, so it is a cross-check, not an independent implementation. [An independent implementation is what the spec still needs.](docs/ROADMAP.md)
+
+## Surviving re-encoding: the experimental carrier
+
+`crates/vox-trust-carrier` hides the 102-bit seal in the audio itself (spread-transform dither modulation on log-spectral tiles, a convolutional code, a CRC and blind synchronisation; [spec section 10.2](spec/SPEC.md)). Measured on 13 recordings in 10 languages ([full results](bench/results/2026-10-01-stdm-1/README.md)):
+
+| Through | Seal recovered (6.4 s windows) |
+|---|---|
+| MP3 64 and 128 kbit/s, AAC 64 kbit/s, resampling, trimming | 100 % |
+| Opus 32 kbit/s, G.722 | about 99 % |
+| Opus 24 kbit/s | 93 % (100 % with 9.6 s windows) |
+| AMR-WB 12.65 kbit/s (phone calls), Opus 12 kbit/s, noise at 20 dB SNR, noise reduction, echo, tempo change | 0 to 3 % |
+| **Wrong seal returned, or false alarm on unmarked audio** | **never** |
+
+Perceptual quality of the marked audio: PESQ-WB 4.40 out of about 4.64. It **did not pass** the project's own gate, and a public carrier lets anyone copy a seal into other audio ([threat model, A11](spec/THREAT-MODEL.md)), so it is used for research and measurement only: the CLI, the demo and the verdicts use file mode. Re-run it with [`bench/`](bench/README.md).
 
 ## Where this fits
 
@@ -123,12 +137,15 @@ crates/
   vox-trust-core/   seal layout, circle and public modes, file mode, policy, replay helpers, pairing text
   vox-trust-wasm/   the core as a WebAssembly module (plain C interface, no imports)
   vox-trust-cli/    the `vox-trust` command-line tool
+  vox-trust-carrier/  experimental in-band carrier (research only)
+  vox-trust-bench/  `vt-bench`, the carrier benchmark
 web/         the browser demo (published at vox-trust.github.io/demo/)
 tests/       Node (WebAssembly) and browser tests
 tools/       independent vector check
 fuzz/        fuzz targets (cargo-fuzz) and seed inputs
+bench/       carrier benchmark: corpus script, quality script, published results
 scripts/     build and publish helpers
-docs/        roadmap
+docs/        roadmap, decision records
 ```
 
 ## Contributing, security, license

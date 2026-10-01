@@ -17,7 +17,7 @@ Um protocolo aberto, com implementação de referência em Rust, que sela uma vo
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-informational">
+  <img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -29,7 +29,7 @@ Um protocolo aberto, com implementação de referência em Rust, que sela uma vo
   <a href="docs/ROADMAP.md">Roteiro</a>
 </p>
 
-> **Status: v0.1, o modo arquivo funciona. Sem auditoria.** Você pode selar um arquivo WAV, verificá-lo e ver exatamente quais segundos foram alterados, na [demo no navegador](https://vox-trust.github.io/demo/?lang=pt-BR) ou pela linha de comando. Arquivos selados sobrevivem **somente a cópias idênticas bit a bit**. A marca d'água de áudio que sobreviveria à recodificação **ainda não foi construída**. Não use isto para proteger ninguém antes de ele ser revisado.
+> **Status: v0.3, o modo arquivo funciona. Sem auditoria.** Você pode selar um arquivo WAV, verificá-lo e ver exatamente quais segundos foram alterados, na [demo no navegador](https://vox-trust.github.io/demo/?lang=pt-BR) ou pela linha de comando. Arquivos selados sobrevivem **somente a cópias idênticas bit a bit**. Uma marca d'água de áudio **experimental**, que sobrevive a MP3, AAC e Opus, foi construída e [medida](bench/results/2026-10-01-stdm-1/README.md). Mas ela falha em codecs de ligação telefônica e com ruído, e selos dentro do áudio podem ser copiados para outro áudio, então ela **ainda não dá veredito**. Não use isto para proteger ninguém antes de ele ser revisado.
 
 ## O problema
 
@@ -58,7 +58,7 @@ Dois modos: **círculo** (pessoas que se conhecem, segredo compartilhado) e **p�
 **Na linha de comando** (binários prontos para Linux, macOS e Windows, com checksums e atestados de build, estão na [página de releases](https://github.com/vox-trust/vox-trust/releases/latest); ou compile do código-fonte):
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.2.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.3.0 vox-trust-cli
 
 vox-trust keygen me.key
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key

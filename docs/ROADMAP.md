@@ -4,16 +4,16 @@ An honest plan with the gates that decide whether to continue. No dates are prom
 
 Legend: ✅ done · 🟡 partly done · ⬜ not started
 
-## Where we are (v0.2.0)
+## Where we are (v0.3.0)
 
 **Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo or the command line. It is a **v0.x draft, not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
 
-- ⬜ **The audio watermark carrier.** Without it, seals survive only bit-exact copies. Re-encoding (MP3, AAC, WhatsApp voice notes), resampling and re-recording all read as modified. Nothing here has been measured against real codecs.
+- 🟡 **The audio watermark carrier.** A first carrier (stdm-1, experimental) is built and measured against real codecs: it survives MP3, AAC, G.722 and Opus at 24 kbit/s and above, but not phone-call codecs (AMR-WB), noise, noise reduction or echo, so it **did not pass the Phase 0 gate**. And because in-band seals are not bound to the audio, anyone can copy a seal into other audio (the copy attack). Until that is solved, only file mode gives verdicts. [Results](../bench/results/2026-10-01-stdm-1/README.md) · [decision](decisions/0001-carrier-phase-0.md)
 - ⬜ **Independent review, an independent implementation, and everything that depends on other people.** Only the author has looked at this code and design (plus automated adversarial reviews, which are not a substitute).
 
 What is done:
 
-- ✅ Specification draft 0.1: file mode fully specified; in-band seal and carrier interface as draft ([spec/SPEC.md](../spec/SPEC.md))
+- ✅ Specification draft 0.1: file mode fully specified; in-band seal as draft; the experimental carrier stdm-1 specified in enough detail to reimplement ([spec/SPEC.md](../spec/SPEC.md))
 - ✅ Threat model draft 0.1 with the author's own adversarial findings and explicit non-claims ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
 - ✅ `vox-trust-core`: seal layout, circle (HMAC-SHA-256) and public (Ed25519, strict) modes, **file mode**, trust policy, replay and rate-limit helpers, pairing text; strict WAV parsing; keys redacted from `Debug` and zeroized where the code controls them
 - ✅ Published test vectors including **negative vectors**, byte-exact across Rust, WebAssembly and a Python cross-check (same author, so a cross-check, not independence)
@@ -22,7 +22,8 @@ What is done:
 - ✅ Website in the same five languages with SEO metadata
 - ✅ CI: format, clippy, tests, docs, minimum supported Rust (1.94), dependency advisories, vectors, WebAssembly, real-browser demo, fuzzing
 - ✅ Two internal adversarial review rounds, with fixes and regression tests
-- ✅ Release v0.2.0 published with binaries for Linux, macOS and Windows, the WebAssembly module and the demo, `SHA256SUMS` and build-provenance attestations; the WebAssembly module is reproducible byte for byte with the pinned toolchain
+- ✅ Releases (from v0.2.0) published by a workflow, with binaries for Linux, macOS and Windows, the WebAssembly module and the demo, `SHA256SUMS` and build-provenance attestations; the WebAssembly module is reproducible byte for byte with the pinned toolchain
+- ✅ Phase 0 measurement: carrier, reproducible benchmark (real codecs, perceptual quality, false alarms), published results and a decision record
 - ⬜ Translations reviewed by native speakers (English is the normative text)
 
 ## Principles
@@ -33,7 +34,19 @@ What is done:
 4. **Claims must match the threat model.** If a sentence says "proves" or "guarantees", it needs an entry there.
 5. **Adoption means independent implementations and integrations**, not star counts.
 
-## Phase 0: measure first (not started: needs a carrier)
+## Phase 0: measure first (done for the first carrier: gate not passed)
+
+**Outcome, 2026-10-01** ([results](../bench/results/2026-10-01-stdm-1/README.md), [decision record](decisions/0001-carrier-phase-0.md)):
+
+- ✅ Carrier stdm-1 (spread-transform dither modulation on log-spectral tiles) and a reproducible benchmark harness with real codecs (ffmpeg), perceptual quality (PESQ-WB, STOI) and false-alarm measurement, on 13 recordings in 10 languages
+- ✅ Survives: MP3 and AAC (100 %), G.722 and Opus 32 kbit/s (about 99 %), Opus 24 kbit/s (93 % with 6.4 s windows, 100 % with 9.6 s), resampling, trimming; PESQ-WB 4.40
+- ❌ Fails: AMR-WB 12.65 kbit/s, Opus 12 kbit/s, noise at 20 dB SNR or worse, noise reduction, echo, tempo changes
+- ✅ No wrong seal and no false alarm in any condition
+- ❌ **Gate not passed** (Opus 24 kbit/s 92.6 % at the default point, AMR-WB 12.65 kbit/s 0 %). As planned, file mode stays the only mode and the carrier stays experimental.
+- ⬜ Still to measure: packet loss, AGC, reverb, speaker-to-microphone replay, neural-codec resynthesis, real app paths, fairness across speakers, a larger and noisier corpus, a listening test
+- ⬜ A carrier designed for model-based speech codecs (AMR-WB, low-rate Opus)
+
+The plan below is the original Phase 0 brief, kept for reference.
 
 Conditions to test, per carrier backend and payload size:
 
@@ -54,11 +67,11 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 - 🟡 Circle-mode tag (HMAC) and public-mode signature (Ed25519): done for file mode and for the in-band circle tag. COSE/C2PA alignment of the manifest is not done.
 - 🟡 Pairing format: text format specified and implemented. QR rendering and a key store are application work, not done.
 - ✅ Counter, time, clock-skew and replay rules; verifier rate limiting (library helpers, with tests)
-- ⬜ Carrier backend interface, a first backend, and a per-backend conformance test
+- 🟡 Carrier backend interface and a first backend (stdm-1, experimental, specified in the spec's section 10.2, with unit tests and a fuzz target); a per-backend conformance test is not done
 - ✅ **Test vectors** published as plain data, byte-exact through the Rust crate and the WebAssembly module
 - ✅ Command-line `seal` and `verify` for files
 - ✅ WebAssembly build and a browser demo that **really verifies** (no mock demo)
-- ⬜ Benchmark harness in the repository
+- ✅ Benchmark harness in the repository (`bench/`, plus an on-demand CI workflow)
 
 **Exit:** someone other than the author reproduces the test vectors from the specification alone. ⬜ (needs another person; the Python check is the author's own)
 
@@ -74,11 +87,11 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 ## Phase 3: public release
 
-- 🟡 A release with a working demo and the open threat model: **v0.2.0 released**; no benchmark results (there is no carrier to measure)
+- 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0**; the carrier did not pass its gate
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
 - 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
 - ⬜ Private vulnerability reporting enabled in the repository settings and tested end to end (SECURITY.md already points to it, with a fallback)
-- ✅ Fuzzing of every parser of untrusted input: five cargo-fuzz targets that check invariants, not only crashes. Before v0.2.0 they ran about 170 million inputs locally with no failure; CI runs them on every push and for 15 minutes each weekly. Fuzzing finds bugs, it does not prove their absence.
+- ✅ Fuzzing of every parser of untrusted input: six cargo-fuzz targets (including the carrier's detector) that check invariants, not only crashes. Locally they ran about 170 million inputs with no failure; CI runs them on every push and for 15 minutes each weekly. Fuzzing finds bugs, it does not prove their absence.
 - ✅ Every GitHub Action pinned by commit hash
 - ✅ Release workflow: binaries for Linux, macOS and Windows, the WebAssembly module and the demo, with `SHA256SUMS` and build-provenance attestations. Tags are created by GitHub, not GPG-signed; the attestations are the integrity check.
 

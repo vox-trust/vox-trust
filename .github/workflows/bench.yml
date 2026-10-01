@@ -1,0 +1,50 @@
+name: Benchmark
+
+# Runs the carrier benchmark (real codecs via ffmpeg, perceptual quality) on demand and
+# uploads the results. About 5 minutes.
+
+on:
+  workflow_dispatch:
+    inputs:
+      args:
+        description: "Extra vt-bench arguments (carrier overrides), e.g. --step 9 --max-db 5.5"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: Carrier benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: pip install imageio-ffmpeg==0.6.0 pesq pystoi numpy soundfile
+      - name: Corpus
+        run: bench/fetch-corpus.sh "$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+      - name: Robustness
+        env:
+          EXTRA: ${{ inputs.args }}
+        run: |
+          cargo build --release --locked -p vox-trust-bench
+          # EXTRA is split into words on purpose: it holds vt-bench options.
+          # shellcheck disable=SC2086
+          target/release/vt-bench --seals 3 --out bench/results/runs/ci \
+            --ffmpeg "$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" $EXTRA
+      - name: Quality
+        run: python3 bench/quality.py bench/results/runs/ci
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bench-results
+          path: |
+            bench/results/runs/ci/results.md
+            bench/results/runs/ci/results.json
+            bench/results/runs/ci/quality.json

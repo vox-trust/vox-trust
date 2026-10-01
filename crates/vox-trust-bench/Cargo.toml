@@ -1,0 +1,18 @@
+[package]
+name = "vox-trust-bench"
+description = "Benchmark harness for the experimental Vox Trust carrier (needs ffmpeg)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[[bin]]
+name = "vt-bench"
+path = "src/main.rs"
+
+[dependencies]
+vox-trust-core = { path = "../vox-trust-core" }
+vox-trust-carrier = { path = "../vox-trust-carrier" }

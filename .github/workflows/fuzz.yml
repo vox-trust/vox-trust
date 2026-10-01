@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [wav_parse, verify_wav, seal_roundtrip, pairing, seal_bytes]
+        target: [wav_parse, verify_wav, seal_roundtrip, pairing, seal_bytes, carrier_detect]
     env:
       SECONDS_PER_TARGET: ${{ github.event_name == 'schedule' && 900 || 45 }}
     steps:

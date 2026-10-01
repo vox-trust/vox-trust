@@ -4,8 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-01
+
+Phase 0: an experimental in-band carrier, measured against real codecs. It did not pass the gate, so file mode stays the only mode that gives verdicts.
+
+### Added
+- **`vox-trust-carrier`** (experimental, research only): carries the 102-bit seal inside the audio with spread-transform dither modulation on log-spectral STFT tiles, a rate-1/2 convolutional code with soft Viterbi decoding, a CRC-16 and blind synchronisation. A damaged watermark reads as *Absent*, never as another seal. Specified in the spec's section 10.2.
+- **Benchmark** (`bench/`, `vt-bench`): a reproducible corpus of 13 openly licensed recordings in 10 languages, 19 conditions (MP3, AAC, Opus, AMR-WB, G.722 via ffmpeg, noise, noise reduction, echo, tempo, trimming), exact-seal recovery, wrong seals, false alarms on unmarked audio, and perceptual quality (PESQ-WB, STOI). On-demand CI workflow.
+- **Results** for four operating points and a decision record (`docs/decisions/0001-carrier-phase-0.md`): MP3 and AAC 100 %, Opus 32 kbit/s and G.722 about 99 %, Opus 24 kbit/s 93 % (100 % with 9.6 s windows); AMR-WB 12.65 kbit/s, noise at 20 dB SNR, noise reduction, echo and tempo changes fail; no wrong seal and no false alarm anywhere; PESQ-WB 4.40.
+- Fuzz target for the carrier's detector.
+
 ### Changed
-- The WebAssembly build pins its Rust toolchain in `scripts/WASM_TOOLCHAIN` (1.99.0). With it, a local build of the v0.2.0 commit reproduces the published `vox_trust-v0.2.0.wasm` byte for byte (SHA-256 `15660a0b…751c8`); with a different toolchain the bytes differ.
+- Specification and threat model: section 10 now specifies the experimental carrier; the copy attack (A11) is described as easy with a public carrier, which blocks any in-band verdict; carrier robustness (A2) and candidate gating (A13) are now measured.
+- The WebAssembly build pins its Rust toolchain in `scripts/WASM_TOOLCHAIN` (1.99.0). With it, a local build of the v0.2.0 commit reproduces the published `vox_trust-v0.2.0.wasm` byte for byte (SHA-256 `15660a0b…751c8`).
 - README: prebuilt binaries on the releases page.
 
 ## [0.2.0] - 2026-10-01

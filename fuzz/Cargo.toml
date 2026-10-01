@@ -10,6 +10,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 vox-trust-core = { path = "../crates/vox-trust-core" }
+vox-trust-carrier = { path = "../crates/vox-trust-carrier" }
 
 # Kept out of the main workspace: fuzzing needs a nightly toolchain.
 [workspace]
@@ -49,6 +50,13 @@ bench = false
 [[bin]]
 name = "seal_bytes"
 path = "fuzz_targets/seal_bytes.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "carrier_detect"
+path = "fuzz_targets/carrier_detect.rs"
 test = false
 doc = false
 bench = false

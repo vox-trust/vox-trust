@@ -1,0 +1,19 @@
+[package]
+name = "vox-trust-carrier"
+description = "Experimental in-band audio carrier for Vox Trust seals: improved spread spectrum in the log-magnitude STFT domain. Measured, not audited."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["audio", "watermark", "spread-spectrum", "provenance", "voice"]
+categories = ["multimedia::audio"]
+
+[dependencies]
+realfft = "3.5.0"
+
+[dev-dependencies]
+vox-trust-core = { path = "../vox-trust-core" }

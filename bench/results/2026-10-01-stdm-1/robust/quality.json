@@ -1,0 +1,74 @@
+{
+  "files": 13,
+  "pesq_wb_mean": 4.181,
+  "pesq_wb_min": 3.754,
+  "stoi_mean": 0.956,
+  "stoi_min": 0.9364,
+  "rows": [
+    {
+      "file": "de",
+      "pesq_wb": 4.233,
+      "stoi": 0.9547
+    },
+    {
+      "file": "en-conversation",
+      "pesq_wb": 4.277,
+      "stoi": 0.9517
+    },
+    {
+      "file": "en-jfk",
+      "pesq_wb": 3.754,
+      "stoi": 0.9364
+    },
+    {
+      "file": "en-libri-198",
+      "pesq_wb": 4.096,
+      "stoi": 0.9566
+    },
+    {
+      "file": "en-libri-3436",
+      "pesq_wb": 4.274,
+      "stoi": 0.9577
+    },
+    {
+      "file": "en-libri-5703",
+      "pesq_wb": 4.374,
+      "stoi": 0.96
+    },
+    {
+      "file": "en-ljspeech",
+      "pesq_wb": 3.978,
+      "stoi": 0.957
+    },
+    {
+      "file": "es",
+      "pesq_wb": 4.06,
+      "stoi": 0.9595
+    },
+    {
+      "file": "fr",
+      "pesq_wb": 4.333,
+      "stoi": 0.9648
+    },
+    {
+      "file": "it",
+      "pesq_wb": 4.167,
+      "stoi": 0.9507
+    },
+    {
+      "file": "ja-ko",
+      "pesq_wb": 4.322,
+      "stoi": 0.9696
+    },
+    {
+      "file": "pt",
+      "pesq_wb": 4.234,
+      "stoi": 0.9491
+    },
+    {
+      "file": "zh",
+      "pesq_wb": 4.247,
+      "stoi": 0.9596
+    }
+  ]
+}

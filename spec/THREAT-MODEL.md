@@ -30,7 +30,7 @@ If the design and implementation are correct, then:
 | # | Attacker | What they do | Outcome under the current design |
 |---|---|---|---|
 | A1 | **Voice cloner** | Calls or messages with a cloned voice, no key. | Cannot produce a Valid seal. For a pinned contact the audio shows Warning/Alert. For a contact that never sealed it shows Unsealed (neutral): **the protocol cannot help here**. |
-| A2 | **Watermark remover** | Strips or damages the watermark (re-encoding, neural codecs, speech enhancement, re-recording). | Real audio becomes Absent. Security holds (no forged Valid), but **availability suffers**: false Warnings for pinned contacts. Carrier robustness is unmeasured (no carrier exists yet). |
+| A2 | **Watermark remover** | Strips or damages the watermark (re-encoding, neural codecs, speech enhancement, re-recording). | Real audio becomes Absent. Security holds (no forged Valid), but **availability suffers**: false Warnings for pinned contacts. Measured for the experimental carrier stdm-1: it survives MP3, AAC, G.722 and Opus at 24 kbit/s and above, and is removed by AMR-WB 12.65 kbit/s, white noise at 20 dB SNR, noise reduction, echo or a 1 % tempo change ([results](../bench/results/2026-10-01-stdm-1/README.md)). Its pattern is public, so deliberate removal is easy. |
 | A3 | **Replayer** | Records genuine sealed audio and plays it later. | The seal still verifies. Counters and coarse time reduce replay of *live* seals; they cannot stop replay of a genuine old recording. |
 | A4 | **Splicer** | Cuts genuine sealed audio into new sentences. | **File mode:** detected, because every chunk digest is bound to its index and content. **In-band:** not solved (no per-chunk binding). |
 | A5 | **Key thief** | Steals the key or the device. | Can seal anything. Out of scope. Key revocation is TBD. |
@@ -39,9 +39,9 @@ If the design and implementation are correct, then:
 | A8 | **Downgrader** | Convinces the victim that the contact "doesn't use it anymore". | Pinning raises the cost but relies on the user. Strict mode is for high-stakes use. |
 | A9 | **Verifier attacker** | Sends crafted files to crash or exhaust the verifier. | The WAV and manifest parsers are strict, bound allocations (at most 2^20 chunks) and are tested with malformed and random inputs. The code is Rust with `unsafe` confined to the WebAssembly boundary. Unreviewed. |
 | A10 | **Brute forcer** | Guesses a short tag against an online verifier. | 2^-32 per attempt; verifiers MUST rate-limit failures. |
-| A11 | **Copy attacker** | Estimates the in-band watermark of one genuine recording and adds it to different audio. | **Unsolved for in-band seals**, which are not bound to content. The fake carries a genuine seal inside the counter/time window. File mode is immune (content digests). Mitigation under study: commit a robust perceptual fingerprint in the tag. |
+| A11 | **Copy attacker** | Reads the in-band seal of one genuine recording and embeds it into different audio. | **Unsolved for in-band seals**, which are not bound to content, and **easy** with stdm-1: its pattern is public, so the attacker uses the reference detector and embedder, no estimation needed. The fake carries a genuine seal inside the counter/time window. File mode is immune (content digests). Consequence: no in-band verdict may be shown as Verified until content binding exists. Mitigation under study: commit a robust perceptual fingerprint in the tag. |
 | A12 | **Circle insider** | A member of a circle with one shared key seals as another member. | Circle mode proves *membership*, not *which member*. Use one key per signer (and direction). Public mode names the signer. |
-| A13 | **Candidate multiplier** | Relies on the verifier trying many offsets or keys, each with a 2^-32 chance of a false accept. | The false-accept rate grows with the candidates tested. Verifiers MUST bound candidates; the tag may need to be longer. To be measured with a real carrier. |
+| A13 | **Candidate multiplier** | Relies on the verifier trying many offsets or keys, each with a 2^-32 chance of a false accept. | The false-accept rate grows with the candidates tested. Verifiers MUST bound candidates; the tag may need to be longer. stdm-1 gates candidates twice before the tag is checked: a synchronisation score of at least 6 standard deviations, then a CRC-16. On about 300,000 candidate positions of unmarked audio per operating point, the highest score was 4.1 and nothing reached the CRC. |
 | A14 | **Pointer forger** | In public mode, collides a short in-band pointer (about 2^32 work) to make a verifier fetch the wrong manifest. | A short pointer MUST NOT carry trust: the verifier checks the manifest's signature and content digests. |
 | A15 | **Metadata tamperer** | Changes parts of the file that are not authenticated (non-audio chunks). | Only the format fields and PCM samples are authenticated. Treat other chunks as untrusted. |
 | A16 | **Key-id collider** | Uses a 32-bit key identifier collision to confuse key selection. | A key id only selects a key; the authenticator is always checked. |
@@ -58,13 +58,14 @@ Written down so reviewers can check them:
 1. **Copy attack on in-band seals (A11).** The in-band seal is not bound to the audio. This is the most important open problem; it is why the specification calls the in-band mode a draft and why file mode is the only mode claimed to detect splicing.
 2. **A 32-bit tag multiplies with the search (A13)** and a shared key cannot say who sealed (A12). Both are now stated in the specification as requirements, not left implicit.
 3. **A seal under the wrong key is worse than no seal.** A fourth verdict input, `UnknownKey`, was added: for a pinned contact it is an Alert, not a Warning.
-4. **Counters wrap and times wrap.** Replay checks use serial-number arithmetic and a verifier may only record a counter after authentication, otherwise an attacker could lock the real signer out. Both are implemented and tested.
-5. **A library must not panic on bad input.** `Seal::to_bytes` used to panic on an out-of-range version; it now returns an error.
-6. **Only part of the file is authenticated (A15).** Stated explicitly.
+4. **A damaged in-band seal must not read as Invalid.** A bit error in a decoded seal would fail its tag and, under the policy, raise an Alert for audio that is merely degraded. stdm-1 therefore returns a seal only when its CRC matches; otherwise the result is Absent.
+5. **Counters wrap and times wrap.** Replay checks use serial-number arithmetic and a verifier may only record a counter after authentication, otherwise an attacker could lock the real signer out. Both are implemented and tested.
+6. **A library must not panic on bad input.** `Seal::to_bytes` used to panic on an out-of-range version; it now returns an error.
+7. **Only part of the file is authenticated (A15).** Stated explicitly.
 
 ## Known weak points, in plain words
 
-1. Everything about *surviving re-encoding* depends on a watermark carrier that **does not exist yet**, and nobody appears to have published measurements for telephone codecs. File mode is exact only for bit-identical copies.
-2. In-band splicing and copy attacks are unsolved (A4, A11).
+1. Surviving re-encoding depends on a watermark carrier. The first one (stdm-1, experimental) survives common file codecs but **not** phone-call codecs (AMR-WB), noise, noise reduction or echo, and it did not pass the gate for use. File mode is exact only for bit-identical copies.
+2. In-band splicing and copy attacks are unsolved (A4, A11), and a public carrier makes copying easy. This blocks any in-band verdict, however robust the carrier.
 3. Public-mode key discovery and revocation are undecided.
 4. Nothing here has been reviewed by anyone but the author. The Python vector check is a cross-check by the same author, not an independent implementation.
