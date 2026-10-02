@@ -21,7 +21,7 @@
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.4.0" src="https://img.shields.io/badge/version-0.4.0-informational">
+  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -35,7 +35,7 @@
 
 <div dir="rtl">
 
-> **الحالة: الإصدار v0.4، وضع الملفات يعمل. لم يخضع لتدقيق.** يمكنك ختم ملف WAV والتحقق منه ومعرفة الثواني التي جرى تعديلها بالضبط، في [العرض التجريبي عبر المتصفح](https://vox-trust.github.io/demo/?lang=ar) أو عبر سطر الأوامر. الملفات المختومة تصمد **أمام النسخ المطابقة بت بت فقط**. بُنيت علامة مائية صوتية **تجريبية** تصمد أمام MP3 وAAC وOpus والتغييرات الطفيفة في السرعة و[قيست](bench/results/2026-10-02-stdm-2/README.md)، لكنها تفشل مع ترميزات المكالمات الهاتفية ومع الضوضاء، ويمكن نسخ الأختام المضمّنة في الصوت إلى صوت آخر، لذلك **لا تُصدر أي حكم بعد**. لا تستخدم هذا لحماية أي شخص قبل أن تتم مراجعته.
+> **الحالة: الإصدار v0.5، وضع الملفات يعمل. لم يخضع لتدقيق.** يمكنك ختم ملف WAV والتحقق منه ومعرفة الثواني التي جرى تعديلها بالضبط، في [العرض التجريبي عبر المتصفح](https://vox-trust.github.io/demo/?lang=ar) أو عبر سطر الأوامر. الملفات المختومة تصمد **أمام النسخ المطابقة بت بت فقط**. بُنيت علامة مائية صوتية **تجريبية** تصمد أمام MP3 وAAC وOpus والتغييرات الطفيفة في السرعة و[قيست](bench/results/2026-10-02-stdm-2/README.md)، لكنها تفشل مع ترميزات المكالمات الهاتفية ومع الضوضاء، ويمكن نسخ الأختام المضمّنة في الصوت إلى صوت آخر، لذلك **لا تُصدر أي حكم بعد**. لا تستخدم هذا لحماية أي شخص قبل أن تتم مراجعته.
 
 ## المشكلة
 
@@ -67,7 +67,7 @@
 </div>
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.4.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.0 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key

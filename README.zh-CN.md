@@ -17,7 +17,7 @@
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.4.0" src="https://img.shields.io/badge/version-0.4.0-informational">
+  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -29,7 +29,7 @@
   <a href="docs/ROADMAP.md">路线图</a>
 </p>
 
-> **状态：v0.4，文件模式可用。未经审计。** 你可以为一个 WAV 文件签章、验证它，并准确看到哪几秒被改动过，既可以在[浏览器演示](https://vox-trust.github.io/demo/?lang=zh-Hans)中进行，也可以使用命令行。已签章的文件**只有在逐位完全相同的副本中**才能保留签章。一种**实验性**音频水印已经实现并经过[测量](bench/results/2026-10-02-stdm-2/README.md)：它能经受 MP3、AAC、Opus 和轻微的变速，但无法经受电话通话编解码器和噪声；而且音频内的签章可以被复制到其他音频中，因此它**目前不给出验证结论**。在通过评审之前，请不要用它来保护任何人。
+> **状态：v0.5，文件模式可用。未经审计。** 你可以为一个 WAV 文件签章、验证它，并准确看到哪几秒被改动过，既可以在[浏览器演示](https://vox-trust.github.io/demo/?lang=zh-Hans)中进行，也可以使用命令行。已签章的文件**只有在逐位完全相同的副本中**才能保留签章。一种**实验性**音频水印已经实现并经过[测量](bench/results/2026-10-02-stdm-2/README.md)：它能经受 MP3、AAC、Opus 和轻微的变速，但无法经受电话通话编解码器和噪声；而且音频内的签章可以被复制到其他音频中，因此它**目前不给出验证结论**。在通过评审之前，请不要用它来保护任何人。
 
 ## 问题
 
@@ -59,7 +59,7 @@
 **在命令行中**（Linux、macOS 和 Windows 的预编译程序及校验和与构建证明见[发布页面](https://github.com/vox-trust/vox-trust/releases/latest)；也可以从源码构建）：
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.4.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.0 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key

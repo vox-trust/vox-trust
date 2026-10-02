@@ -15,7 +15,7 @@ An open protocol, with a Rust reference implementation, that seals a human voice
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.4.0" src="https://img.shields.io/badge/version-0.4.0-informational">
+  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -27,7 +27,7 @@ An open protocol, with a Rust reference implementation, that seals a human voice
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-> **Status: v0.4, file mode works. Not audited.** You can seal a WAV file, verify it, and see exactly which seconds were altered, in the [browser demo](https://vox-trust.github.io/demo/) or with the command line. Sealed files survive **only bit-exact copies**. An **experimental** audio watermark that survives MP3, AAC, Opus and small speed changes is built and [measured](bench/results/2026-10-02-stdm-2/README.md), but it fails phone-call codecs and noise, and in-band seals can be copied into other audio, so it gives **no verdicts** yet. Do not use this to protect anyone until it has been reviewed.
+> **Status: v0.5, file mode works. Not audited.** You can seal a WAV file, verify it, and see exactly which seconds were altered, in the [browser demo](https://vox-trust.github.io/demo/) or with the command line. Sealed files survive **only bit-exact copies**. An **experimental** audio watermark that survives MP3, AAC, Opus and small speed changes is built and [measured](bench/results/2026-10-02-stdm-2/README.md), but it fails phone-call codecs and noise, and in-band seals can be copied into other audio, so it gives **no verdicts** yet. Do not use this to protect anyone until it has been reviewed.
 
 ## The problem
 
@@ -57,7 +57,7 @@ Two modes: **circle** (people who know each other, shared secret) and **public**
 **On the command line** (prebuilt binaries for Linux, macOS and Windows, with checksums and build attestations, are on the [releases page](https://github.com/vox-trust/vox-trust/releases/latest); or build from source):
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.4.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.0 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key

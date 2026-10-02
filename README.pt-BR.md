@@ -17,7 +17,7 @@ Um protocolo aberto, com implementação de referência em Rust, que sela uma vo
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.4.0" src="https://img.shields.io/badge/version-0.4.0-informational">
+  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -29,7 +29,7 @@ Um protocolo aberto, com implementação de referência em Rust, que sela uma vo
   <a href="docs/ROADMAP.md">Roteiro</a>
 </p>
 
-> **Status: v0.4, o modo arquivo funciona. Sem auditoria.** Você pode selar um arquivo WAV, verificá-lo e ver exatamente quais segundos foram alterados, na [demo no navegador](https://vox-trust.github.io/demo/?lang=pt-BR) ou pela linha de comando. Arquivos selados sobrevivem **somente a cópias idênticas bit a bit**. Uma marca d'água de áudio **experimental**, que sobrevive a MP3, AAC, Opus e pequenas mudanças de velocidade, foi construída e [medida](bench/results/2026-10-02-stdm-2/README.md). Mas ela falha em codecs de ligação telefônica e com ruído, e selos dentro do áudio podem ser copiados para outro áudio, então ela **ainda não dá veredito**. Não use isto para proteger ninguém antes de ele ser revisado.
+> **Status: v0.5, o modo arquivo funciona. Sem auditoria.** Você pode selar um arquivo WAV, verificá-lo e ver exatamente quais segundos foram alterados, na [demo no navegador](https://vox-trust.github.io/demo/?lang=pt-BR) ou pela linha de comando. Arquivos selados sobrevivem **somente a cópias idênticas bit a bit**. Uma marca d'água de áudio **experimental**, que sobrevive a MP3, AAC, Opus e pequenas mudanças de velocidade, foi construída e [medida](bench/results/2026-10-02-stdm-2/README.md). Mas ela falha em codecs de ligação telefônica e com ruído, e selos dentro do áudio podem ser copiados para outro áudio, então ela **ainda não dá veredito**. Não use isto para proteger ninguém antes de ele ser revisado.
 
 ## O problema
 
@@ -59,7 +59,7 @@ Dois modos: **círculo** (pessoas que se conhecem, segredo compartilhado) e **p�
 **Na linha de comando** (binários prontos para Linux, macOS e Windows, com checksums e atestados de build, estão na [página de releases](https://github.com/vox-trust/vox-trust/releases/latest); ou compile do código-fonte):
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.4.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.0 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key

@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-02
+
 Carrier research: a better experimental carrier, a yardstick from published neural watermarks, and a measured negative result on content binding.
 
 ### Added
