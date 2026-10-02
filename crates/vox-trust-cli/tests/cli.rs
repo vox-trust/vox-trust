@@ -719,3 +719,36 @@ fn a_fifo_in_place_of_a_file_is_refused_without_hanging() {
     assert_eq!(code(&out), 66);
     assert!(err(&out).contains("not a regular file"), "{}", err(&out));
 }
+
+#[test]
+fn the_default_counter_is_the_creation_second() {
+    let dir = Dir::new();
+    let key = keygen(&dir, "k.key");
+    let (clip, sealed) = (dir.path("a.wav"), dir.path("s.wav"));
+    write_clip(&clip);
+    let out = run(&["seal", &clip, &sealed, "--mode", "circle", "--key", &key]);
+    assert_eq!(code(&out), 0, "{}", err(&out));
+    let json = text(&run(&["verify", &sealed, "--circle-key", &key, "--json"]));
+    let field = |name: &str| -> u64 {
+        let at = json.find(&format!("\"{name}\":")).unwrap() + name.len() + 3;
+        json[at..]
+            .split([',', '}'])
+            .next()
+            .unwrap()
+            .parse()
+            .unwrap()
+    };
+    assert_eq!(field("counter"), field("created_unix"), "{json}");
+    assert!(field("counter") > 1_700_000_000);
+}
+
+#[test]
+fn a_passphrase_file_with_a_plain_key_is_an_error() {
+    let dir = Dir::new();
+    let key = keygen(&dir, "k.key");
+    let pass = dir.path("pass.txt");
+    fs::write(&pass, "pw\n").unwrap();
+    let out = run(&["pubkey", &key, "--passphrase-file", &pass]);
+    assert_eq!(code(&out), 64);
+    assert!(err(&out).contains("plain key"), "{}", err(&out));
+}

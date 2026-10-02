@@ -56,10 +56,16 @@ pub extern "C" fn vt_abi_version() -> u32 {
     ABI_VERSION
 }
 
-/// Allocates `len` zeroed bytes in linear memory and returns a pointer to them.
+/// Allocates `len` zeroed bytes in linear memory and returns a pointer to them, or null if
+/// the memory cannot be had (instead of trapping).
 #[no_mangle]
 pub extern "C" fn vt_alloc(len: usize) -> *mut u8 {
-    Box::into_raw(vec![0u8; len.max(1)].into_boxed_slice()) as *mut u8
+    let mut v = Vec::new();
+    if v.try_reserve_exact(len.max(1)).is_err() {
+        return std::ptr::null_mut();
+    }
+    v.resize(len.max(1), 0u8);
+    Box::into_raw(v.into_boxed_slice()) as *mut u8
 }
 
 /// Frees memory obtained from [`vt_alloc`].
@@ -254,6 +260,10 @@ mod tests {
         let p = vt_alloc(16);
         assert!(!p.is_null());
         unsafe { vt_free(p, 16) };
+        assert!(
+            vt_alloc(usize::MAX).is_null(),
+            "an impossible size is null, not a trap"
+        );
         let p = vt_alloc(0); // zero-length requests are still valid pointers
         assert!(!p.is_null());
         unsafe { vt_free(p, 0) };

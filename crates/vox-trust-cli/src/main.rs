@@ -23,7 +23,7 @@ USAGE
   vox-trust protect PLAIN_KEYFILE PROTECTED_KEYFILE [--passphrase-file FILE]
   vox-trust pubkey KEYFILE [--passphrase-file FILE]
   vox-trust seal IN.wav OUT.wav --mode circle|public --key KEYFILE
-                [--chunk-seconds 1] [--counter 0] [--force] [--passphrase-file FILE]
+                [--chunk-seconds 1] [--counter N] [--force] [--passphrase-file FILE]
   vox-trust verify FILE.wav [--circle-key KEYFILE] [--pin PUBLIC_KEY_OR_FILE]
                 [--contact stranger|always|strict] [--json] [--passphrase-file FILE]
 
@@ -57,7 +57,14 @@ EXIT CODES (verify)
 
 COUNTER
   --counter is stored in the manifest and authenticated, but in file mode it is only
-  informational (spec section 6.2). If you keep a count per key, pass the next value.
+  informational (spec section 6.2). Without it, the counter is the creation time in
+  seconds, which grows between seals made at least a second apart. If you keep a count per
+  key, pass the next value.
+
+JSON (verify --json)
+  The report's created_unix, counter, mode, key_id, chunk_frames and n_chunks are what the
+  file declares. They are authenticated only when \"authenticated\" is true; otherwise treat
+  them as claims, as the text output does.
 
 NOTE
   Seals survive only bit-exact copies. Re-encoding (MP3, AAC, resampling, re-recording)
@@ -332,6 +339,12 @@ fn read_secret_key(path: &Path, args: &Args) -> Result<Zeroizing<[u8; 32]>> {
     let bytes = Zeroizing::new(read_bounded(path, KEY_FILE_CAP, "key file")?);
     let text = std::str::from_utf8(&bytes).unwrap_or("");
     if !keyfile::is_protected(text) {
+        if args.has("passphrase-file") {
+            return Err(usage(format!(
+                "{} is a plain key; --passphrase-file is only for protected keys",
+                path.display()
+            )));
+        }
         return read_hex_file(path, "key file");
     }
     let failed = |e: keyfile::KeyFileError| {
@@ -570,8 +583,11 @@ fn cmd_seal(args: &Args) -> Result<()> {
             .filter(|v: &f64| v.is_finite() && *v > 0.0)
             .ok_or_else(|| usage("--chunk-seconds must be a positive number"))?,
     };
+    let created_unix = now_unix();
+    // Without --counter, the creation second: it grows between seals made at least a second
+    // apart, with no state to keep (spec section 6.2 asks signers to increase it).
     let counter: u32 = match args.get("counter")? {
-        None => 0,
+        None => u32::try_from(created_unix).unwrap_or(u32::MAX),
         Some(s) => s
             .parse()
             .map_err(|_| usage("--counter must be a non-negative integer"))?,
@@ -617,7 +633,7 @@ fn cmd_seal(args: &Args) -> Result<()> {
         &bytes,
         signer,
         SealParams {
-            created_unix: now_unix(),
+            created_unix,
             counter,
             chunk_frames,
         },

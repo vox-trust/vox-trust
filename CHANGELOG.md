@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+- CLI: without `--counter`, `seal` stores the creation time in seconds as the counter, so it grows between seals instead of always being 0.
+- CLI: `--passphrase-file` with a plain (unprotected) key is a usage error instead of being ignored.
+- WebAssembly: `vt_alloc` returns null when memory cannot be had, instead of trapping; the JavaScript wrapper reports it (`core_oom`, translated).
+- CLI help: says which `verify --json` fields are only claims until `authenticated` is true.
+
 ## [0.4.0] - 2026-10-02
 
 Closing the code side before an outside audit: format decisions, protected keys, and tests that check the tests.
