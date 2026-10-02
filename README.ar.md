@@ -137,17 +137,17 @@ assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 
 تضع معظم الصناعة علامة على **الصوت الذي يولّده الذكاء الاصطناعي** كي يُعرف لاحقًا. أما Vox Trust فيفعل العكس: يضمن **الكلام البشري الحقيقي** بدليل يستطيع أي شخص التحقق منه.
 
-| | **Vox Trust** | Google SynthID | Meta AudioSeal | Resemble PerTh | كواشف التزييف العميق¹ | C2PA |
+| | <small>**Vox Trust**</small> | <small>Google SynthID</small> | <small>Meta AudioSeal</small> | <small>Resemble PerTh</small> | <small>كواشف التزييف العميق¹</small> | <small>C2PA</small> |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
-| يضمن تسجيلًا بشريًا حقيقيًا | ✅ | ❌ يعلّم مخرجات الذكاء الاصطناعي | ❌ يعلّم مخرجات الذكاء الاصطناعي | ❌ يعلّم مخرجات الذكاء الاصطناعي | ⚠️ يقدّر | ✅ إذا وقّع تطبيق التسجيل |
-| دليل مرتبط بمفتاح المتحدث نفسه | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ شهادة الموقّع |
-| يحدد الثواني التي عُدّلت | ✅ | ❌ | ⚠️ مناطق معلَّمة أو لا | ❌ | ❌ | ❌ الملف كله |
-| يستطيع أي شخص التحقق دون اتصال | ✅ في المتصفح | ❌ كاشف Google | ✅ | ⚠️ | ❌ | ✅ |
-| مواصفة وشيفرة مفتوحتان | ✅ | ❌ للصوت | ✅ الشيفرة | ⚠️ الشيفرة | ❌ | ✅ المواصفة |
-| يصمد أمام MP3 وAAC وOpus | ⚠️ علامة مائية تجريبية، 100 % مقيس | ✅ مُعلن | ✅ مقيس | ✅ مُعلن | لا ينطبق | ❌ كثيرًا ما تُحذف البيانات الوصفية |
-| يصمد أمام المكالمات الهاتفية (AMR-WB) | ❌ 11 % | غير منشور | ❌ 0 % مقيس | غير منشور | ✅ | ❌ |
-| كلفة التحقق | أجزاء من الثانية، دون نموذج ذكاء اصطناعي | خدمة سحابية | شبكة عصبية | شبكة عصبية | خدمة سحابية | أجزاء من الثانية |
-| اختبار معياري علني يشمل الإخفاقات | ✅ | ❌ | ورقة بحثية | ❌ | أرقام المورّد | لا ينطبق |
+| <small>يضمن تسجيلًا بشريًا حقيقيًا</small> | <small>✅</small> | <small>❌ يعلّم مخرجات الذكاء الاصطناعي</small> | <small>❌ يعلّم مخرجات الذكاء الاصطناعي</small> | <small>❌ يعلّم مخرجات الذكاء الاصطناعي</small> | <small>⚠️ يقدّر</small> | <small>✅ إذا وقّع تطبيق التسجيل</small> |
+| <small>دليل مرتبط بمفتاح المتحدث نفسه</small> | <small>✅</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>✅ شهادة الموقّع</small> |
+| <small>يحدد الثواني التي عُدّلت</small> | <small>✅</small> | <small>❌</small> | <small>⚠️ مناطق معلَّمة أو لا</small> | <small>❌</small> | <small>❌</small> | <small>❌ الملف كله</small> |
+| <small>يستطيع أي شخص التحقق دون اتصال</small> | <small>✅ في المتصفح</small> | <small>❌ كاشف Google</small> | <small>✅</small> | <small>⚠️</small> | <small>❌</small> | <small>✅</small> |
+| <small>مواصفة وشيفرة مفتوحتان</small> | <small>✅</small> | <small>❌ للصوت</small> | <small>✅ الشيفرة</small> | <small>⚠️ الشيفرة</small> | <small>❌</small> | <small>✅ المواصفة</small> |
+| <small>يصمد أمام MP3 وAAC وOpus</small> | <small>⚠️ علامة مائية تجريبية، 100 % مقيس</small> | <small>✅ مُعلن</small> | <small>✅ مقيس</small> | <small>✅ مُعلن</small> | <small>لا ينطبق</small> | <small>❌ كثيرًا ما تُحذف البيانات الوصفية</small> |
+| <small>يصمد أمام المكالمات الهاتفية (AMR-WB)</small> | <small>❌ 11 %</small> | <small>غير منشور</small> | <small>❌ 0 % مقيس</small> | <small>غير منشور</small> | <small>✅</small> | <small>❌</small> |
+| <small>كلفة التحقق</small> | <small>أجزاء من الثانية، دون نموذج ذكاء اصطناعي</small> | <small>خدمة سحابية</small> | <small>شبكة عصبية</small> | <small>شبكة عصبية</small> | <small>خدمة سحابية</small> | <small>أجزاء من الثانية</small> |
+| <small>اختبار معياري علني يشمل الإخفاقات</small> | <small>✅</small> | <small>❌</small> | <small>ورقة بحثية</small> | <small>❌</small> | <small>أرقام المورّد</small> | <small>لا ينطبق</small> |
 
 "مقيس" يعني أنه شُغّل على [اختبارنا المعياري](bench/results/2026-10-02-neural-baselines/README.md) بالمدوّنة الصوتية والترميزات نفسها؛ و"مُعلن" هو الرقم الذي نشره المورّد. ¹ مثل [Pindrop Pulse](https://www.pindrop.com/article/pindrop-pulse-for-audio-deepfake-detection/): يقدّر ما إذا كان الصوت اصطناعيًا، وهذا مفيد، لكنه احتمال وليس دليلًا على هوية المتحدث. مصادر كل خانة في [ملاحظات المقارنة](docs/COMPARISON.md) (بالإنجليزية).
 

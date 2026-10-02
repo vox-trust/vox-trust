@@ -133,17 +133,17 @@ Perceptual quality of the marked audio: PESQ-WB 4.41 out of about 4.64. It **doe
 
 Most of the industry marks **AI output** so it can be recognised later. Vox Trust does the opposite: it vouches for **real human speech**, with a proof anyone can check.
 
-| | **Vox Trust** | Google SynthID | Meta AudioSeal | Resemble PerTh | Deepfake detectors¹ | C2PA |
+| | <small>**Vox Trust**</small> | <small>Google SynthID</small> | <small>Meta AudioSeal</small> | <small>Resemble PerTh</small> | <small>Deepfake detectors¹</small> | <small>C2PA</small> |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
-| Vouches for a real human recording | ✅ | ❌ marks AI output | ❌ marks AI output | ❌ marks AI output | ⚠️ estimates | ✅ if the recording app signs |
-| Proof bound to the speaker's own key | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ signer certificate |
-| Points to the seconds that were altered | ✅ | ❌ | ⚠️ marked vs unmarked regions | ❌ | ❌ | ❌ whole file |
-| Anyone can verify, offline | ✅ in the browser | ❌ Google's detector | ✅ | ⚠️ | ❌ | ✅ |
-| Open specification and code | ✅ | ❌ for audio | ✅ code | ⚠️ code | ❌ | ✅ specification |
-| Survives MP3, AAC, Opus | ⚠️ experimental carrier, 100 % measured | ✅ claimed | ✅ measured | ✅ claimed | not applicable | ❌ metadata is often stripped |
-| Survives phone calls (AMR-WB) | ❌ 11 % | not published | ❌ 0 % measured | not published | ✅ | ❌ |
-| Cost to verify | milliseconds, no AI model | cloud service | neural network | neural network | cloud service | milliseconds |
-| Public benchmark, failures included | ✅ | ❌ | research paper | ❌ | vendor figures | not applicable |
+| <small>Vouches for a real human recording</small> | <small>✅</small> | <small>❌ marks AI output</small> | <small>❌ marks AI output</small> | <small>❌ marks AI output</small> | <small>⚠️ estimates</small> | <small>✅ if the recording app signs</small> |
+| <small>Proof bound to the speaker's own key</small> | <small>✅</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>✅ signer certificate</small> |
+| <small>Points to the seconds that were altered</small> | <small>✅</small> | <small>❌</small> | <small>⚠️ marked vs unmarked regions</small> | <small>❌</small> | <small>❌</small> | <small>❌ whole file</small> |
+| <small>Anyone can verify, offline</small> | <small>✅ in the browser</small> | <small>❌ Google's detector</small> | <small>✅</small> | <small>⚠️</small> | <small>❌</small> | <small>✅</small> |
+| <small>Open specification and code</small> | <small>✅</small> | <small>❌ for audio</small> | <small>✅ code</small> | <small>⚠️ code</small> | <small>❌</small> | <small>✅ specification</small> |
+| <small>Survives MP3, AAC, Opus</small> | <small>⚠️ experimental carrier, 100 % measured</small> | <small>✅ claimed</small> | <small>✅ measured</small> | <small>✅ claimed</small> | <small>not applicable</small> | <small>❌ metadata is often stripped</small> |
+| <small>Survives phone calls (AMR-WB)</small> | <small>❌ 11 %</small> | <small>not published</small> | <small>❌ 0 % measured</small> | <small>not published</small> | <small>✅</small> | <small>❌</small> |
+| <small>Cost to verify</small> | <small>milliseconds, no AI model</small> | <small>cloud service</small> | <small>neural network</small> | <small>neural network</small> | <small>cloud service</small> | <small>milliseconds</small> |
+| <small>Public benchmark, failures included</small> | <small>✅</small> | <small>❌</small> | <small>research paper</small> | <small>❌</small> | <small>vendor figures</small> | <small>not applicable</small> |
 
 "Measured" means run on [our benchmark](bench/results/2026-10-02-neural-baselines/README.md) with the same corpus and codecs; "claimed" means the vendor's published figure. ¹ For example [Pindrop Pulse](https://www.pindrop.com/article/pindrop-pulse-for-audio-deepfake-detection/): it estimates whether a voice is synthetic, which is useful but a probability, not proof of who spoke. Sources for every cell are in the [comparison notes](docs/COMPARISON.md).
 

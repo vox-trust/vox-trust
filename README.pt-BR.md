@@ -119,17 +119,17 @@ A verificação em Python foi escrita pelo mesmo autor, portanto é uma verifica
 
 Quase toda a indústria marca o **áudio gerado por IA** para que ele seja reconhecido depois. O Vox Trust faz o contrário: garante a **fala humana real**, com uma prova que qualquer pessoa pode conferir.
 
-| | **Vox Trust** | Google SynthID | Meta AudioSeal | Resemble PerTh | Detectores de deepfake¹ | C2PA |
+| | <small>**Vox Trust**</small> | <small>Google SynthID</small> | <small>Meta AudioSeal</small> | <small>Resemble PerTh</small> | <small>Detectores de deepfake¹</small> | <small>C2PA</small> |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
-| Garante uma gravação humana real | ✅ | ❌ marca saída de IA | ❌ marca saída de IA | ❌ marca saída de IA | ⚠️ estima | ✅ se o app de gravação assinar |
-| Prova ligada à chave do próprio falante | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ certificado do assinante |
-| Aponta os segundos alterados | ✅ | ❌ | ⚠️ regiões marcadas ou não | ❌ | ❌ | ❌ arquivo inteiro |
-| Qualquer pessoa verifica, offline | ✅ no navegador | ❌ detector do Google | ✅ | ⚠️ | ❌ | ✅ |
-| Especificação e código abertos | ✅ | ❌ para áudio | ✅ código | ⚠️ código | ❌ | ✅ especificação |
-| Sobrevive a MP3, AAC, Opus | ⚠️ marca d'água experimental, 100 % medido | ✅ declarado | ✅ medido | ✅ declarado | não se aplica | ❌ metadados costumam ser removidos |
-| Sobrevive a ligações (AMR-WB) | ❌ 11 % | não publicado | ❌ 0 % medido | não publicado | ✅ | ❌ |
-| Custo para verificar | milissegundos, sem modelo de IA | serviço na nuvem | rede neural | rede neural | serviço na nuvem | milissegundos |
-| Benchmark público, com as falhas | ✅ | ❌ | artigo científico | ❌ | números do fornecedor | não se aplica |
+| <small>Garante uma gravação humana real</small> | <small>✅</small> | <small>❌ marca saída de IA</small> | <small>❌ marca saída de IA</small> | <small>❌ marca saída de IA</small> | <small>⚠️ estima</small> | <small>✅ se o app de gravação assinar</small> |
+| <small>Prova ligada à chave do próprio falante</small> | <small>✅</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>✅ certificado do assinante</small> |
+| <small>Aponta os segundos alterados</small> | <small>✅</small> | <small>❌</small> | <small>⚠️ regiões marcadas ou não</small> | <small>❌</small> | <small>❌</small> | <small>❌ arquivo inteiro</small> |
+| <small>Qualquer pessoa verifica, offline</small> | <small>✅ no navegador</small> | <small>❌ detector do Google</small> | <small>✅</small> | <small>⚠️</small> | <small>❌</small> | <small>✅</small> |
+| <small>Especificação e código abertos</small> | <small>✅</small> | <small>❌ para áudio</small> | <small>✅ código</small> | <small>⚠️ código</small> | <small>❌</small> | <small>✅ especificação</small> |
+| <small>Sobrevive a MP3, AAC, Opus</small> | <small>⚠️ marca d'água experimental, 100 % medido</small> | <small>✅ declarado</small> | <small>✅ medido</small> | <small>✅ declarado</small> | <small>não se aplica</small> | <small>❌ metadados costumam ser removidos</small> |
+| <small>Sobrevive a ligações (AMR-WB)</small> | <small>❌ 11 %</small> | <small>não publicado</small> | <small>❌ 0 % medido</small> | <small>não publicado</small> | <small>✅</small> | <small>❌</small> |
+| <small>Custo para verificar</small> | <small>milissegundos, sem modelo de IA</small> | <small>serviço na nuvem</small> | <small>rede neural</small> | <small>rede neural</small> | <small>serviço na nuvem</small> | <small>milissegundos</small> |
+| <small>Benchmark público, com as falhas</small> | <small>✅</small> | <small>❌</small> | <small>artigo científico</small> | <small>❌</small> | <small>números do fornecedor</small> | <small>não se aplica</small> |
 
 "Medido" significa rodado no [nosso benchmark](bench/results/2026-10-02-neural-baselines/README.md), com o mesmo corpus e os mesmos codecs; "declarado" é o número publicado pelo fornecedor. ¹ Por exemplo o [Pindrop Pulse](https://www.pindrop.com/article/pindrop-pulse-for-audio-deepfake-detection/): ele estima se uma voz é sintética, o que é útil, mas é uma probabilidade, não uma prova de quem falou. As fontes de cada célula estão nas [notas da comparação](docs/COMPARISON.md) (em inglês).
 

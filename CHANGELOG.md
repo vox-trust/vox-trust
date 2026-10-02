@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+- Demo (five languages): it said the audio watermark was "not built yet"; it is experimental (survives MP3, AAC and Opus, not phone calls, no verdicts).
+- README comparison table set in a smaller type so its cells wrap less.
+
 ## [0.5.0] - 2026-10-02
 
 Carrier research: a better experimental carrier, a yardstick from published neural watermarks, and a measured negative result on content binding.

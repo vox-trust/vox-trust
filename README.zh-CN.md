@@ -119,17 +119,17 @@ Python 校验由同一位作者编写，因此它是交叉校验，而不是独�
 
 业内大多数方案给 **AI 生成的音频**打标记，以便日后识别。Vox Trust 反其道而行：为**真人语音**作保，并提供任何人都能核验的证明。
 
-| | **Vox Trust** | Google SynthID | Meta AudioSeal | Resemble PerTh | 深度伪造检测器¹ | C2PA |
+| | <small>**Vox Trust**</small> | <small>Google SynthID</small> | <small>Meta AudioSeal</small> | <small>Resemble PerTh</small> | <small>深度伪造检测器¹</small> | <small>C2PA</small> |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
-| 为真人录音作保 | ✅ | ❌ 标记 AI 输出 | ❌ 标记 AI 输出 | ❌ 标记 AI 输出 | ⚠️ 估计 | ✅ 若录音应用签名 |
-| 证明与说话者本人的密钥绑定 | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ 签名者证书 |
-| 指出被改动的秒数 | ✅ | ❌ | ⚠️ 区分有无标记的区域 | ❌ | ❌ | ❌ 仅整个文件 |
-| 任何人都能离线验证 | ✅ 浏览器内 | ❌ 需 Google 检测器 | ✅ | ⚠️ | ❌ | ✅ |
-| 规范与代码开放 | ✅ | ❌ 音频未开放 | ✅ 代码 | ⚠️ 代码 | ❌ | ✅ 规范 |
-| 经受 MP3、AAC、Opus | ⚠️ 实验性水印，实测 100 % | ✅ 官方声称 | ✅ 实测 | ✅ 官方声称 | 不适用 | ❌ 元数据常被剥离 |
-| 经受电话通话（AMR-WB） | ❌ 11 % | 未公布 | ❌ 实测 0 % | 未公布 | ✅ | ❌ |
-| 验证成本 | 毫秒级，无需 AI 模型 | 云服务 | 神经网络 | 神经网络 | 云服务 | 毫秒级 |
-| 公开基准测试（含失败项） | ✅ | ❌ | 学术论文 | ❌ | 厂商数据 | 不适用 |
+| <small>为真人录音作保</small> | <small>✅</small> | <small>❌ 标记 AI 输出</small> | <small>❌ 标记 AI 输出</small> | <small>❌ 标记 AI 输出</small> | <small>⚠️ 估计</small> | <small>✅ 若录音应用签名</small> |
+| <small>证明与说话者本人的密钥绑定</small> | <small>✅</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>❌</small> | <small>✅ 签名者证书</small> |
+| <small>指出被改动的秒数</small> | <small>✅</small> | <small>❌</small> | <small>⚠️ 区分有无标记的区域</small> | <small>❌</small> | <small>❌</small> | <small>❌ 仅整个文件</small> |
+| <small>任何人都能离线验证</small> | <small>✅ 浏览器内</small> | <small>❌ 需 Google 检测器</small> | <small>✅</small> | <small>⚠️</small> | <small>❌</small> | <small>✅</small> |
+| <small>规范与代码开放</small> | <small>✅</small> | <small>❌ 音频未开放</small> | <small>✅ 代码</small> | <small>⚠️ 代码</small> | <small>❌</small> | <small>✅ 规范</small> |
+| <small>经受 MP3、AAC、Opus</small> | <small>⚠️ 实验性水印，实测 100 %</small> | <small>✅ 官方声称</small> | <small>✅ 实测</small> | <small>✅ 官方声称</small> | <small>不适用</small> | <small>❌ 元数据常被剥离</small> |
+| <small>经受电话通话（AMR-WB）</small> | <small>❌ 11 %</small> | <small>未公布</small> | <small>❌ 实测 0 %</small> | <small>未公布</small> | <small>✅</small> | <small>❌</small> |
+| <small>验证成本</small> | <small>毫秒级，无需 AI 模型</small> | <small>云服务</small> | <small>神经网络</small> | <small>神经网络</small> | <small>云服务</small> | <small>毫秒级</small> |
+| <small>公开基准测试（含失败项）</small> | <small>✅</small> | <small>❌</small> | <small>学术论文</small> | <small>❌</small> | <small>厂商数据</small> | <small>不适用</small> |
 
 “实测”指在[我们的基准测试](bench/results/2026-10-02-neural-baselines/README.md)中以相同语料和编解码器运行；“官方声称”指厂商公布的数据。¹ 例如 [Pindrop Pulse](https://www.pindrop.com/article/pindrop-pulse-for-audio-deepfake-detection/)：它估计声音是否为合成，这很有用，但只是概率，并不能证明是谁在说话。每个单元格的来源见[对比说明](docs/COMPARISON.md)（英文）。
 
