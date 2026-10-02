@@ -115,17 +115,19 @@ The Python check is written by the same author, so it is a cross-check, not an i
 
 ## Surviving re-encoding: the experimental carrier
 
-`crates/vox-trust-carrier` hides the 102-bit seal in the audio itself (spread-transform dither modulation on log-spectral tiles, a convolutional code, a CRC and blind synchronisation; [spec section 10.2](spec/SPEC.md)). Measured on 13 recordings in 10 languages ([full results](bench/results/2026-10-01-stdm-1/README.md)):
+`crates/vox-trust-carrier` hides the 102-bit seal in the audio itself (spread-transform dither modulation on log-spectral tiles, a convolutional code, a CRC, blind synchronisation and a tempo search; [spec section 10.2](spec/SPEC.md)). The current configuration, stdm-2, measured on 13 recordings in 10 languages ([full results](bench/results/2026-10-02-stdm-2/README.md)):
 
-| Through | Seal recovered (6.4 s windows) |
+| Through | Seal recovered (9.6 s windows) |
 |---|---|
-| MP3 64 and 128 kbit/s, AAC 64 kbit/s, resampling, trimming | 100 % |
-| Opus 32 kbit/s, G.722 | about 99 % |
-| Opus 24 kbit/s | 93 % (100 % with 9.6 s windows) |
-| AMR-WB 12.65 kbit/s (phone calls), Opus 12 kbit/s, noise at 20 dB SNR, noise reduction, echo, tempo change | 0 to 3 % |
+| MP3 64 and 128 kbit/s, AAC 64 kbit/s, Opus 24 and 32 kbit/s, G.722, resampling, trimming | 100 % |
+| MP3, then re-shared as Opus 24 kbit/s | 98 % |
+| AMR-WB 23.85 kbit/s | 89 % |
+| A 1 % speed change (same pitch) | 84 % |
+| White noise at 30 dB SNR | 51 % |
+| AMR-WB 12.65 kbit/s (phone calls), Opus 12 kbit/s, noise at 20 dB SNR, noise reduction, echo | 0 to 11 % |
 | **Wrong seal returned, or false alarm on unmarked audio** | **never** |
 
-Perceptual quality of the marked audio: PESQ-WB 4.40 out of about 4.64. It **did not pass** the project's own gate, and a public carrier lets anyone copy a seal into other audio ([threat model, A11](spec/THREAT-MODEL.md)), so it is used for research and measurement only: the CLI, the demo and the verdicts use file mode. Re-run it with [`bench/`](bench/README.md).
+Perceptual quality of the marked audio: PESQ-WB 4.41 out of about 4.64. It **does not pass** the project's own gate, and a public carrier lets anyone copy a seal into other audio ([threat model, A11](spec/THREAT-MODEL.md)). Binding the seal to the audio with a robust fingerprint was tried and an adaptive attacker defeats it ([study](bench/results/2026-10-02-content-binding/README.md)). So the carrier is for research and measurement only: the CLI, the demo and the verdicts use file mode. Re-run it with [`bench/`](bench/README.md).
 
 ## Where this fits
 

@@ -1,0 +1,53 @@
+{
+  "wavmark": {
+    "recordings": 13,
+    "unmarked_runs_per_condition": 14,
+    "pesq_wb_mean": 4.1219970262967625,
+    "pesq_wb_min": 3.9020519256591797,
+    "stoi_mean": 0.9959458013910724,
+    "conditions": {
+      "original": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "noise-20db": {
+        "exact": 0.0,
+        "bits": 0.5,
+        "detected": 0.0,
+        "false_alarms": null
+      },
+      "opus-24k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": null
+      },
+      "amr-wb-12.65k": {
+        "exact": 0.3076923076923077,
+        "bits": 0.8125,
+        "detected": 0.6923076923076923,
+        "false_alarms": null
+      },
+      "denoise": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": null
+      },
+      "echo": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": null
+      },
+      "tempo+1%": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": null
+      }
+    }
+  }
+}

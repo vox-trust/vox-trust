@@ -8,7 +8,7 @@ whatever they are.
 - **Yardstick, published neural watermarks:** [results/2026-10-02-neural-baselines](results/2026-10-02-neural-baselines/README.md)
 - **Content binding study (negative result):** [results/2026-10-02-content-binding](results/2026-10-02-content-binding/README.md)
 - **Corpus and licences:** [CORPUS.md](CORPUS.md)
-- **Decision taken from them:** [docs/decisions/0001-carrier-phase-0.md](../docs/decisions/0001-carrier-phase-0.md)
+- **Decisions taken from them:** [0001](../docs/decisions/0001-carrier-phase-0.md), [0002](../docs/decisions/0002-carrier-follow-up.md)
 
 ## Pieces
 

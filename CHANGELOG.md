@@ -9,7 +9,7 @@ Carrier research: a better experimental carrier, a yardstick from published neur
 ### Added
 - **stdm-2** (experimental carrier): stdm-1 with 9.6 s windows. Through Opus 24 kbit/s 100 % (was 93 %), MP3 then Opus 98 % (was 65 %), AMR-WB 23.85 kbit/s 89 % (was 58 %), at the same quality (PESQ-WB 4.41); no wrong seal, no false alarm. `Params::stdm1()` keeps the old configuration; the two do not read each other's seals.
 - Carrier detector **tempo search** (`max_tempo_pct`, on by default at ±2 %): it re-aligns audio played faster or slower without moving frequencies. A 1 % tempo change goes from 0 % to 84 % of windows recovered.
-- `bench/neural_baselines.py`: AudioSeal and WavMark, used as published, on the same corpus, conditions and quality metrics as our carriers ([results](bench/results/2026-10-02-neural-baselines/README.md)).
+- `bench/neural_baselines.py`: AudioSeal and WavMark, used as published, on the same corpus, conditions and quality metrics as our carriers ([results](bench/results/2026-10-02-neural-baselines/README.md)). WavMark survives noise reduction, echo, tempo and partly AMR-WB, where stdm-2 fails; it is the lead for the next carrier, to be measured with a full 102-bit seal.
 - `bench/content_binding.py` and `bench/content_binding_keyed.py`: a study of binding in-band seals to the audio with a robust fingerprint. **Negative result**: it stops a naive copy but an adaptive attacker defeats it, also with a fingerprint secret to the circle ([study](bench/results/2026-10-02-content-binding/README.md)). The copy attack stays open.
 
 ### Changed

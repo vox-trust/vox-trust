@@ -1,0 +1,119 @@
+{
+  "audioseal": {
+    "recordings": 13,
+    "unmarked_runs_per_condition": 14,
+    "pesq_wb_mean": 4.4300659619844875,
+    "pesq_wb_min": 4.277364253997803,
+    "stoi_mean": 0.9979287548533651,
+    "conditions": {
+      "original": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "resample-44k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "trim-1.234s": {
+        "exact": 0.07692307692307693,
+        "bits": 0.8798076923076923,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "noise-30db": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "noise-20db": {
+        "exact": 0.5384615384615384,
+        "bits": 0.9471153846153846,
+        "detected": 0.6923076923076923,
+        "false_alarms": 0
+      },
+      "noise-10db": {
+        "exact": 0.07692307692307693,
+        "bits": 0.8125,
+        "detected": 0.0,
+        "false_alarms": 0
+      },
+      "mp3-128k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "mp3-64k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "aac-64k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "opus-32k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "opus-24k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "opus-12k": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "amr-wb-12.65k": {
+        "exact": 0.0,
+        "bits": 0.5817307692307693,
+        "detected": 0.07692307692307693,
+        "false_alarms": 0
+      },
+      "amr-wb-23.85k": {
+        "exact": 0.0,
+        "bits": 0.5769230769230769,
+        "detected": 0.3076923076923077,
+        "false_alarms": 0
+      },
+      "g722": {
+        "exact": 0.0,
+        "bits": 0.4951923076923077,
+        "detected": 0.7692307692307693,
+        "false_alarms": 0
+      },
+      "denoise": {
+        "exact": 0.0,
+        "bits": 0.4855769230769231,
+        "detected": 0.07692307692307693,
+        "false_alarms": 0
+      },
+      "echo": {
+        "exact": 1.0,
+        "bits": 1.0,
+        "detected": 1.0,
+        "false_alarms": 0
+      },
+      "tempo+1%": {
+        "exact": 0.6153846153846154,
+        "bits": 0.9567307692307693,
+        "detected": 0.07692307692307693,
+        "false_alarms": 0
+      }
+    }
+  }
+}

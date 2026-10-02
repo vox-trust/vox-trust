@@ -44,7 +44,8 @@ What is done:
 - ✅ No wrong seal and no false alarm in any condition
 - ❌ **Gate not passed** (Opus 24 kbit/s 92.6 % at the default point, AMR-WB 12.65 kbit/s 0 %). As planned, file mode stays the only mode and the carrier stays experimental.
 - ✅ **stdm-2** (2026-10-02): 9.6 s windows and a detector tempo search. Opus 24 kbit/s 100 %, MP3 then Opus 98 %, 1 % tempo change 84 % (all were lower or 0); AMR-WB 12.65 kbit/s, noise, noise reduction and echo still fail ([results](../bench/results/2026-10-02-stdm-2/README.md))
-- ✅ Published neural watermarks (AudioSeal, WavMark) measured on the same harness as a yardstick ([results](../bench/results/2026-10-02-neural-baselines/README.md))
+- ✅ Published neural watermarks (AudioSeal, WavMark) measured on the same harness as a yardstick: WavMark survives noise reduction, echo, tempo and partly AMR-WB, where stdm-2 fails ([results](../bench/results/2026-10-02-neural-baselines/README.md))
+- ⬜ WavMark (or a similar network) carrying a full 102-bit seal, on every condition
 - ❌ **Content binding by a robust fingerprint** (2026-10-02): stops a naive copy, defeated by an adaptive attacker, also with a fingerprint secret to the circle ([study](../bench/results/2026-10-02-content-binding/README.md)). The copy attack stays open.
 - ⬜ Still to measure: packet loss, AGC, reverb, speaker-to-microphone replay, neural-codec resynthesis, real app paths, fairness across speakers, a larger and noisier corpus, a listening test
 - ⬜ A carrier designed for model-based speech codecs (AMR-WB, low-rate Opus)
