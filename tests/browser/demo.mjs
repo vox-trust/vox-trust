@@ -407,6 +407,8 @@ await step("with nothing stored, navigator.languages picks the language (en othe
     const c = await browser.newContext({ locale });
     const p = await c.newPage();
     await p.goto(base);
+    // Non-English dictionaries load asynchronously; <html lang> changes once one arrives.
+    await p.waitForFunction((w) => document.documentElement.lang === w, want, { timeout: 5000 }).catch(() => {});
     assert.equal((await htmlAttrs(p)).lang, want, locale);
     await c.close();
   }
