@@ -16,6 +16,7 @@ Carrier research: a better experimental carrier, a yardstick from published neur
 - A parameter sweep of stdm-2 on noise and AMR-WB: tuning buys about ten points of noise robustness and at most 24 % through AMR-WB 12.65 kbit/s at an audible cost; the default is unchanged.
 
 ### Changed
+- Documents state their status the way standards do: "Specification, version 0.2" with a status line (file mode a release candidate, in-band parts experimental, 1.0 after an outside review and a second implementation), instead of "DRAFT" titles. Stale labels fixed (the governance page said 0.0, the threat model and file-mode vectors 0.1).
 - Specification section 10: stdm-2 next to stdm-1, the optional tempo search, and the content-binding result in 10.3; `stdm-2` added to the registry. Threat model A2, A11 and A13 updated with the new measurements.
 - CLI: without `--counter`, `seal` stores the creation time in seconds as the counter, so it grows between seals instead of always being 0.
 - CLI: `--passphrase-file` with a plain (unprotected) key is a usage error instead of being ignored.

@@ -95,7 +95,7 @@
       ]
     }
   ],
-  "description": "Vox Trust file-mode vectors, draft 0.1. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything. `cases` are positive; `negative` files must NOT verify as valid and carry the exact expected outcome.",
+  "description": "Vox Trust file-mode vectors, specification 0.2. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything. `cases` are positive; `negative` files must NOT verify as valid and carry the exact expected outcome.",
   "negative": [
     {
       "description": "one bit of the Ed25519 signature flipped; the audio is untouched",

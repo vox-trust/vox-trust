@@ -1,4 +1,4 @@
-//! Circle mode: the in-band seal is authenticated with a shared secret (draft spec, section 5).
+//! Circle mode: the in-band seal is authenticated with a shared secret (spec section 5).
 //!
 //! `tag` is the first 4 bytes of
 //! `HMAC-SHA-256(K, "vox-trust/0/circle-seal\0" || version || mode || key_id || counter || time)`.

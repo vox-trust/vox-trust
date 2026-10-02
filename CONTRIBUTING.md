@@ -1,6 +1,6 @@
 # Contributing to Vox Trust
 
-Thanks for looking. The project is a v0.x draft, so the most useful contributions right now are **scrutiny and measurement**, not features.
+Thanks for looking. The project is pre-1.0 (specification 0.2, file mode a release candidate), so the most useful contributions right now are **scrutiny and measurement**, not features.
 
 ## Most useful right now
 

@@ -1,4 +1,4 @@
-//! The 102-bit in-band seal layout (draft spec, section 4).
+//! The 102-bit in-band seal layout (spec section 4).
 
 use core::fmt;
 
@@ -53,10 +53,10 @@ impl Mode {
     }
 }
 
-/// A seal payload as laid out in the draft spec.
+/// A seal payload as laid out in the spec.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Seal {
-    /// Layout version (4 bits). `0` during the draft.
+    /// Layout version (4 bits). `0` in specification 0.2.
     pub version: u8,
     /// Authentication mode.
     pub mode: Mode,

@@ -6,15 +6,15 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started
 
 ## Where we are (v0.4.0)
 
-**Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo or the command line. It is a **v0.x draft, not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
+**Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo or the command line. It is a **pre-1.0 (specification 0.2), not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
 
 - 🟡 **The audio watermark carrier.** An experimental carrier (stdm-1, now stdm-2) is built and measured against real codecs: it survives MP3, AAC, G.722, Opus at 24 kbit/s and above and small speed changes, but not phone-call codecs (AMR-WB), noise, noise reduction or echo, so it **did not pass the Phase 0 gate**. And because in-band seals are not bound to the audio, anyone can copy a seal into other audio (the copy attack). Until that is solved, only file mode gives verdicts. [Results](../bench/results/2026-10-01-stdm-1/README.md) · [decision](decisions/0001-carrier-phase-0.md)
 - ⬜ **Independent review, an independent implementation, and everything that depends on other people.** Only the author has looked at this code and design (plus automated adversarial reviews, which are not a substitute).
 
 What is done:
 
-- ✅ Specification draft 0.2: file mode fully specified, its version-0 format a release candidate with a defined time epoch, counter rules, versioning rules and a registry of identifiers (section 13); in-band seal as draft; the experimental carrier stdm-1 specified in enough detail to reimplement ([spec/SPEC.md](../spec/SPEC.md))
-- ✅ Threat model draft 0.1 with the author's own adversarial findings and explicit non-claims ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
+- ✅ Specification version 0.2: file mode fully specified, its version-0 format a release candidate with a defined time epoch, counter rules, versioning rules and a registry of identifiers (section 13); in-band seal as draft; the experimental carrier stdm-1 specified in enough detail to reimplement ([spec/SPEC.md](../spec/SPEC.md))
+- ✅ Threat model version 0.2 with the author's own adversarial findings and explicit non-claims ([spec/THREAT-MODEL.md](../spec/THREAT-MODEL.md))
 - ✅ `vox-trust-core`: seal layout, circle (HMAC-SHA-256) and public (Ed25519, strict) modes, **file mode**, trust policy, replay and rate-limit helpers, pairing text; strict WAV parsing; keys redacted from `Debug` and zeroized where the code controls them
 - ✅ Published test vectors including **negative vectors**, byte-exact across Rust, WebAssembly and a Python cross-check (same author, so a cross-check, not independence)
 - ✅ `vox-trust` command-line tool, hardened (regular files only, size caps, atomic non-overwriting `seal`, no panics on odd input); key files protected by a passphrase by default (Argon2id, XChaCha20-Poly1305), with a known-answer vector from an independent implementation
@@ -66,7 +66,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 **Proposed gate (to be revised against the data):** continue with watermark carrying only if a backend verifies ≥ 95% of the time through Opus 24 kbit/s, AAC 64 kbit/s and MP3 128 kbit/s, and ≥ 80% through AMR-WB 12.65 kbit/s, with a false-accept rate per window no worse than the tag's 2^-32 *per candidate tested*. If none does, file mode (already built) stays the only mode and watermark carrying stays experimental.
 
-## Phase 1: core (drafts 0.1 and 0.2)
+## Phase 1: core (specification 0.1 and 0.2)
 
 - 🟡 Circle-mode tag (HMAC) and public-mode signature (Ed25519): done for file mode and for the in-band circle tag. COSE/C2PA alignment of the manifest is not done.
 - 🟡 Pairing format: text format specified and implemented. QR rendering and a key store are application work, not done.
@@ -79,7 +79,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 **Exit:** someone other than the author reproduces the test vectors from the specification alone. ⬜ (needs another person; the Python check is the author's own)
 
-## Phase 2: review and a second implementation (draft 0.3)
+## Phase 2: review and a second implementation (towards 1.0)
 
 - ⬜ Independent review of the threat model and the cryptographic design
 - 🟡 A second implementation written from the specification: `tools/check_vectors.py` re-implements the vectors from the spec text, but by the same author. An implementation by someone else is still needed.

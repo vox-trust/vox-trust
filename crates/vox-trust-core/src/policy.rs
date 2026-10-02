@@ -86,7 +86,7 @@ impl Verdict {
     }
 }
 
-/// Applies the trust-policy table of the draft spec.
+/// Applies the trust-policy table of the spec (section 8).
 ///
 /// `contact` is `None` when the verifier has no record of the claimed speaker.
 pub fn decide(check: SealCheck, contact: Option<ContactState>) -> Verdict {

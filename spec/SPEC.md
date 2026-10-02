@@ -1,8 +1,10 @@
-# Vox Trust Protocol: specification (DRAFT 0.2)
+# Vox Trust Protocol Specification, version 0.2
 
-> **Status: draft 0.2, unreviewed by anyone but the author.** It specifies **file mode** completely, with a reference implementation and test vectors; the version-0 file-mode format is a **release candidate**: frozen unless a review finds a flaw, and any incompatible change will get a new version number (section 13). An **experimental in-band carrier** (an audio watermark meant to let a seal survive re-encoding) is built and measured (section 10.2) but did not pass the gate for use, and in-band seals are not bound to the audio (10.3). Nothing here is a security guarantee. Every item marked *TBD* is genuinely undecided.
+> **Status of this document.** Version 0.2, 2026-10-02. **File mode: release candidate.** **In-band carriers: experimental.** Not yet reviewed by anyone but the author; it becomes 1.0 after an outside review and a second, independent implementation ([roadmap](../docs/ROADMAP.md)).
+>
+> It specifies **file mode** completely, with a reference implementation and test vectors; the version-0 file-mode format is a **release candidate**: frozen unless a review finds a flaw, and any incompatible change will get a new version number (section 13). An **experimental in-band carrier** (an audio watermark meant to let a seal survive re-encoding) is built and measured (section 10.2) but did not pass the gate for use, and in-band seals are not bound to the audio (10.3). Nothing here is a security guarantee. Every item marked *TBD* is genuinely undecided.
 
-The key words "MUST", "SHOULD" and "MAY" are used as in RFC 2119, but in a draft they describe intent, not conformance.
+The key words "MUST", "SHOULD" and "MAY" are used as in RFC 2119. For file mode they define conformance; for the experimental in-band parts (sections 4 and 10) they describe intent and may change.
 
 ## 1. Scope
 
@@ -36,13 +38,13 @@ Vox Trust lets a speaker's device **seal** audio at the source, and lets anyone 
 1. **File mode (specified, implemented).** A manifest travels inside a WAV file as a `VOXT` chunk. It commits to the audio format and to a digest of every chunk, so it shows *which chunks* changed. It survives only **bit-exact copies**: any re-encoding changes every sample.
 2. **In-band mode (draft, experimental).** A short seal is embedded in the audio itself by a carrier so it can survive some re-encoding. The first carrier survives common file codecs but not phone-call codecs or noise ([measurements](../bench/results/2026-10-01-stdm-1/README.md)), and in-band seals are open to copying (10.3).
 
-## 4. In-band seal layout (draft)
+## 4. In-band seal layout (experimental)
 
 A seal is **102 bits**, packed most-significant-bit first into **13 bytes**; the final 2 bits are zero (reserved).
 
 | Field | Bits | Description |
 |---|---|---|
-| `version` | 4 | Layout version. `0` during the draft. |
+| `version` | 4 | Layout version. `0` in this document. |
 | `mode` | 2 | `0` = circle, `1` = public, `2`-`3` reserved. |
 | `key_id` | 32 | Identifies which secret or key the verifier should use. |
 | `counter` | 16 | Per-key counter that increases with each seal. |

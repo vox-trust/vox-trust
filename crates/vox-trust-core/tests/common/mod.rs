@@ -118,7 +118,7 @@ pub fn seal_vectors() -> Value {
     .collect();
 
     json!({
-        "description": "Vox Trust seal vectors, draft 0.2. All keys in this file are public test values: NEVER use them to protect anything. Circle tag = first 4 bytes of HMAC-SHA-256(key, \"vox-trust/0/circle-seal\\0\" || authenticated_fields). Circle key id = first 4 bytes (big-endian) of SHA-256(\"vox-trust/0/key-id\" || key). Coarse time = floor(unix_seconds / 60) mod 65536.",
+        "description": "Vox Trust seal vectors, specification 0.2. All keys in this file are public test values: NEVER use them to protect anything. Circle tag = first 4 bytes of HMAC-SHA-256(key, \"vox-trust/0/circle-seal\\0\" || authenticated_fields). Circle key id = first 4 bytes (big-endian) of SHA-256(\"vox-trust/0/key-id\" || key). Coarse time = floor(unix_seconds / 60) mod 65536.",
         "packing": packing,
         "circle_tags": circle_tags,
         "circle_key_ids": key_ids,
@@ -431,7 +431,7 @@ pub fn file_vectors() -> Value {
         .collect();
 
     json!({
-        "description": "Vox Trust file-mode vectors, draft 0.1. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything. `cases` are positive; `negative` files must NOT verify as valid and carry the exact expected outcome.",
+        "description": "Vox Trust file-mode vectors, specification 0.2. See spec/SPEC.md, section 6 (File mode). All keys in this file are public test values: NEVER use them to protect anything. `cases` are positive; `negative` files must NOT verify as valid and carry the exact expected outcome.",
         "cases": cases,
         "negative": negative_vectors(),
     })

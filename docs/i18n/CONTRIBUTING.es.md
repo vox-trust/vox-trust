@@ -2,7 +2,7 @@
 
 # Contribuir a Vox Trust (resumen)
 
-El proyecto es un borrador v0.x, así que las contribuciones más útiles ahora son **escrutinio y medición**, no funcionalidades.
+El proyecto está antes de la 1.0 (especificación 0.2, modo archivo como release candidate), así que las contribuciones más útiles ahora son **escrutinio y medición**, no funcionalidades.
 
 ## Lo más útil ahora
 

@@ -1,4 +1,4 @@
-//! The pairing text exchanged in person, for example inside a QR code (draft spec, section 9).
+//! The pairing text exchanged in person, for example inside a QR code (spec section 9).
 //!
 //! ```text
 //! voxtrust:0:circle:<64 hex: the shared secret>[:<label>]

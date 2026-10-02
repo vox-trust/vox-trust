@@ -1,4 +1,6 @@
-# Threat model (DRAFT 0.1)
+# Threat model, version 0.2
+
+> **Status:** matches specification 0.2 (2026-10-02). Written and attacked by the author so far; outside review is the next step.
 
 This is meant to be attacked. If you find an attacker missing or a claim too strong, please open an issue.
 
@@ -55,7 +57,7 @@ A verifier can run **locally** (including in a browser) and send no audio anywhe
 
 Written down so reviewers can check them:
 
-1. **Copy attack on in-band seals (A11).** The in-band seal is not bound to the audio. This is the most important open problem; it is why the specification calls the in-band mode a draft and why file mode is the only mode claimed to detect splicing.
+1. **Copy attack on in-band seals (A11).** The in-band seal is not bound to the audio. This is the most important open problem; it is why the specification calls the in-band mode experimental and why file mode is the only mode claimed to detect splicing.
 2. **A 32-bit tag multiplies with the search (A13)** and a shared key cannot say who sealed (A12). Both are now stated in the specification as requirements, not left implicit.
 3. **A seal under the wrong key is worse than no seal.** A fourth verdict input, `UnknownKey`, was added: for a pinned contact it is an Alert, not a Warning.
 4. **A damaged in-band seal must not read as Invalid.** A bit error in a decoded seal would fail its tag and, under the policy, raise an Alert for audio that is merely degraded. stdm-1 therefore returns a seal only when its CRC matches; otherwise the result is Absent.

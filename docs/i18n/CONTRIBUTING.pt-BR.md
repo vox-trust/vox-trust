@@ -2,7 +2,7 @@
 
 # Contribuindo com o Vox Trust (resumo)
 
-O projeto é um rascunho v0.x, então as contribuições mais úteis agora são **escrutínio e medição**, não funcionalidades.
+O projeto está antes da 1.0 (especificação 0.2, modo arquivo como release candidate), então as contribuições mais úteis agora são **escrutínio e medição**, não funcionalidades.
 
 ## O mais útil agora
 

@@ -2,7 +2,7 @@
 
 # Política de segurança (resumo)
 
-O Vox Trust é **v0.x, um rascunho**. A especificação não está congelada e o código não foi revisado nem auditado. Não dependa dele para proteger ninguém.
+O Vox Trust está **antes da 1.0**: especificação versão 0.2 (modo arquivo como release candidate, partes dentro do áudio experimentais), software v0.x. O código não foi revisado nem auditado. Não dependa dele para proteger ninguém.
 
 - **Versões suportadas:** somente a última versão em `main`.
 - **Metas de divulgação:** confirmar o recebimento em até 7 dias e publicar correção e aviso (advisory) em até 90 dias após um relato válido. Este é um projeto voluntário: são metas, não garantias. Não há recompensa (bug bounty) por enquanto, mas os relatos são lidos e creditados, se você quiser.

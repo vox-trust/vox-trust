@@ -4,7 +4,7 @@ title: "Vox Trust Protocol"
 abstract: >-
   An open protocol, with a Rust reference implementation, that seals a human
   voice at the source so that anyone can later verify which key sealed it,
-  when, and which parts were altered. Pre-alpha; the specification is a draft.
+  when, and which parts were altered. Pre-1.0; specification version 0.2, file mode a release candidate.
 type: software
 authors:
   - family-names: "Oliveira"
