@@ -1,0 +1,107 @@
+name: Publish packages
+
+# Publishes a released version to crates.io (vox-trust-core, vox-trust-carrier,
+# vox-trust-cli) and npm (vox-trust). Run it from the Actions tab after the Release
+# workflow has created the tag. Needs the repository secrets CARGO_REGISTRY_TOKEN and
+# NPM_TOKEN. The npm package carries a provenance statement, and its WebAssembly file
+# must be byte-identical to the one attached to the GitHub Release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Released tag to publish, e.g. v0.5.1"
+        required: true
+      registries:
+        description: "Where to publish"
+        type: choice
+        options: [both, crates.io, npm]
+        default: both
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ inputs.tag }}
+
+jobs:
+  crates:
+    name: crates.io
+    if: inputs.registries != 'npm'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Tag matches Cargo.toml
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name == "vox-trust-core") | .version')
+          [ "$TAG" = "v$version" ] || { echo "::error::tag $TAG does not match Cargo.toml version $version"; exit 1; }
+      - name: Publish (core, then carrier and cli, which depend on it)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          [ -n "$CARGO_REGISTRY_TOKEN" ] || { echo "::error::secret CARGO_REGISTRY_TOKEN is not set"; exit 1; }
+          version="${TAG#v}"
+          for crate in vox-trust-core vox-trust-carrier vox-trust-cli; do
+            if curl -fsS -A "vox-trust-publish (github.com/vox-trust/vox-trust)" \
+                "https://crates.io/api/v1/crates/$crate/$version" > /dev/null 2>&1; then
+              echo "$crate $version is already on crates.io, skipping"
+            else
+              cargo publish --locked -p "$crate"
+            fi
+          done
+
+  npm:
+    name: npm
+    if: inputs.registries != 'crates.io'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Build the WebAssembly core and assemble the package
+        run: |
+          scripts/build-web.sh
+          scripts/build-npm.sh
+          [ "$TAG" = "v$(node -p 'require("./npm/package.json").version')" ] \
+            || { echo "::error::tag $TAG does not match npm/package.json"; exit 1; }
+      - name: Same bytes as the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$TAG" --pattern "vox_trust-${TAG}.wasm" --dir release
+          cmp "release/vox_trust-${TAG}.wasm" npm/vox_trust.wasm
+          sha256sum npm/vox_trust.wasm
+      - name: Test the packed package
+        run: node --test tests/node/npm-package.test.mjs
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          [ -n "$NODE_AUTH_TOKEN" ] || { echo "::error::secret NPM_TOKEN is not set"; exit 1; }
+          version="${TAG#v}"
+          if npm view "vox-trust@$version" version > /dev/null 2>&1; then
+            echo "vox-trust $version is already on npm, skipping"
+          else
+            cd npm && npm publish --provenance --access public
+          fi

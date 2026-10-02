@@ -774,7 +774,7 @@ dependencies = [
 
 [[package]]
 name = "vox-trust-bench"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "vox-trust-carrier",
  "vox-trust-core",
@@ -782,7 +782,7 @@ dependencies = [
 
 [[package]]
 name = "vox-trust-carrier"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "criterion",
  "realfft",
@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "vox-trust-cli"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "argon2",
  "chacha20poly1305",
@@ -804,7 +804,7 @@ dependencies = [
 
 [[package]]
 name = "vox-trust-core"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "criterion",
  "ed25519-dalek",
@@ -816,7 +816,7 @@ dependencies = [
 
 [[package]]
 name = "vox-trust-wasm"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "vox-trust-core",
 ]

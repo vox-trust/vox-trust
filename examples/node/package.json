@@ -1,0 +1,6 @@
+{
+  "name": "vox-trust-example-node",
+  "private": true,
+  "type": "module",
+  "dependencies": { "vox-trust": "^0.5.1" }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "vox-trust",
+  "version": "0.5.1",
+  "description": "Seal real voices, verify them anywhere: sealed WAV files (HMAC-SHA-256 or Ed25519) with tamper localization, in WebAssembly, for browsers and Node. Pre-1.0, not audited.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "node": "./node.js",
+      "default": "./browser.js"
+    },
+    "./vox_trust.wasm": "./vox_trust.wasm",
+    "./package.json": "./package.json"
+  },
+  "types": "./index.d.ts",
+  "files": ["browser.js", "node.js", "vox-trust.js", "vox_trust.wasm", "index.d.ts", "README.md", "LICENSE", "NOTICE"],
+  "sideEffects": false,
+  "engines": { "node": ">=20" },
+  "keywords": ["voice", "audio", "authenticity", "provenance", "deepfake", "voice-cloning", "signature", "ed25519", "wav", "webassembly"],
+  "homepage": "https://vox-trust.github.io/",
+  "repository": { "type": "git", "url": "git+https://github.com/vox-trust/vox-trust.git", "directory": "npm" },
+  "bugs": "https://github.com/vox-trust/vox-trust/issues",
+  "author": "Roger Oliveira",
+  "license": "Apache-2.0"
+}

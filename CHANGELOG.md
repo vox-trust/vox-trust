@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-02
+
+Packages for developers: Vox Trust is meant to be built into other apps.
+
+### Added
+- **npm package `vox-trust`** (`npm/`): the WebAssembly core and the JavaScript wrapper, with TypeScript types and a `load()` that finds the bundled WebAssembly file in Node and in bundlers. `scripts/build-npm.sh` assembles it; a test packs it, installs it in a scratch project and seals, verifies and localizes tampering through `import "vox-trust"`.
+- **Crates ready for crates.io**: `vox-trust-core`, `vox-trust-carrier` and `vox-trust-cli` (`cargo install vox-trust-cli`), each with a README, the licence and versioned dependencies. CI checks that the core packages.
+- `.github/workflows/publish.yml`: publishes a released tag to crates.io and npm (with npm provenance), after checking that the npm package's WebAssembly is byte-identical to the GitHub Release's.
+- `docs/INTEGRATION.md`, "Integrate Vox Trust in 10 minutes": keys, pairing, the four verdicts and what to show, JavaScript, Rust, the command line, circle mode and a checklist; `examples/` for Node, the browser (microphone) and Rust (`cargo run -p vox-trust-core --example seal_and_verify`).
+- README (five languages): a "Build it into your app" section.
+
 ### Fixed
 - Demo (five languages): it said the audio watermark was "not built yet"; it is experimental (survives MP3, AAC and Opus, not phone calls, no verdicts).
 - README comparison table set in a smaller type so its cells wrap less.

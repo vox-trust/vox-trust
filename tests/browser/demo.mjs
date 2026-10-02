@@ -394,9 +394,12 @@ await step("the chosen language persists across reloads (localStorage) and ?lang
   const p = await lctx.newPage();
   await p.goto(base);
   await ready(p);
+  // Non-English dictionaries load asynchronously; wait for the switch before asserting.
+  await p.waitForFunction(() => document.documentElement.lang === "pt-BR", null, { timeout: 5000 }).catch(() => {});
   assert.equal((await htmlAttrs(p)).lang, "pt-BR");
   assert.equal(await p.locator("h1").innerText(), LANGS["pt-BR"].h1);
   await p.goto(`${base}?lang=ar`);
+  await p.waitForFunction(() => document.documentElement.dir === "rtl", null, { timeout: 5000 }).catch(() => {});
   assert.deepEqual(await htmlAttrs(p), { lang: "ar", dir: "rtl" });
   await p.close();
   await pickLang(lp, "en");

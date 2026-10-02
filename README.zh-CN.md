@@ -17,7 +17,7 @@
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-informational">
+  <img alt="Version 0.5.1" src="https://img.shields.io/badge/version-0.5.1-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -59,7 +59,7 @@
 **在命令行中**（Linux、macOS 和 Windows 的预编译程序及校验和与构建证明见[发布页面](https://github.com/vox-trust/vox-trust/releases/latest)；也可以从源码构建）：
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.1 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
@@ -86,6 +86,25 @@ let sealed = seal_wav(
 let trust = Trust { circle: Some((circle::key_id(&key), &key)), pinned_public: None };
 assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 ```
+
+## 集成到你的应用
+
+Vox Trust 是一个开放协议，设计为嵌入人们已在使用的应用：即时通讯、语音信箱、播客与新闻编辑工具、客服平台。发送时加封，接收时验证。
+
+```sh
+npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
+cargo add vox-trust-core     # Rust, no unsafe, no I/O
+```
+
+```js
+import { load } from "vox-trust";
+const vt = await load();
+const sealed = vt.seal(wav, { mode: "public", key: seed, createdUnix, chunkFrames: 16000 });
+const report = vt.verify(sealed, { pinnedPublicKey });
+vt.decide(report.check, { alwaysSeals: true, strict: false }); // "verified" | "unsealed" | "warning" | "alert"
+```
+
+[集成指南](docs/INTEGRATION.md)（英文）约需 10 分钟：密钥、配对、四种判定及各自应如何显示，并附可运行的 Node、浏览器（麦克风）和 Rust [示例](examples/)。Apache-2.0，无需调用任何服务，无需账号。
 
 ## 它不是什么
 
@@ -152,6 +171,8 @@ crates/
   vox-trust-wasm/   作为 WebAssembly 模块的核心（纯 C 接口，无 imports）
   vox-trust-cli/    命令行工具 `vox-trust`
 web/         浏览器演示（发布于 vox-trust.github.io/demo/）
+npm/         npm 包 `vox-trust`（WebAssembly + JavaScript 封装 + 类型）
+examples/    集成示例：Node、浏览器、Rust
 tests/       Node（WebAssembly）与浏览器测试
 tools/       独立的向量校验
 fuzz/        模糊测试目标（cargo-fuzz）与种子输入

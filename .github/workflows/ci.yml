@@ -101,10 +101,14 @@ jobs:
           pip install cryptography argon2-cffi pycryptodome
           python3 tools/check_vectors.py --strict
           python3 tools/keyfile_kat.py
-      - name: Build the WebAssembly core
-        run: scripts/build-web.sh
-      - name: WebAssembly end-to-end tests (Node)
+      - name: Build the WebAssembly core and the npm package
+        run: |
+          scripts/build-web.sh
+          scripts/build-npm.sh
+      - name: WebAssembly end-to-end tests and the packed npm package (Node)
         run: node --test tests/node/*.mjs
+      - name: The core crate packages for crates.io
+        run: cargo publish --dry-run --locked -p vox-trust-core
 
   browser:
     name: Demo in ${{ matrix.browser }}

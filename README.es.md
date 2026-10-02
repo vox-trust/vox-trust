@@ -17,7 +17,7 @@ Un protocolo abierto, con una implementación de referencia en Rust, que sella u
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-informational">
+  <img alt="Version 0.5.1" src="https://img.shields.io/badge/version-0.5.1-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -59,7 +59,7 @@ Dos modos: **círculo** (personas que se conocen, secreto compartido) y **públi
 **En la línea de comandos** (hay binarios listos para Linux, macOS y Windows, con sumas de verificación y atestaciones de compilación, en la [página de versiones](https://github.com/vox-trust/vox-trust/releases/latest); o compila desde el código fuente):
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.1 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
@@ -86,6 +86,25 @@ let sealed = seal_wav(
 let trust = Trust { circle: Some((circle::key_id(&key), &key)), pinned_public: None };
 assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 ```
+
+## Intégralo en tu app
+
+Vox Trust es un protocolo abierto pensado para vivir dentro de las apps que la gente ya usa: mensajería, buzón de voz, herramientas de pódcast y de redacción, plataformas de atención. Sella al enviar, verifica al recibir.
+
+```sh
+npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
+cargo add vox-trust-core     # Rust, no unsafe, no I/O
+```
+
+```js
+import { load } from "vox-trust";
+const vt = await load();
+const sealed = vt.seal(wav, { mode: "public", key: seed, createdUnix, chunkFrames: 16000 });
+const report = vt.verify(sealed, { pinnedPublicKey });
+vt.decide(report.check, { alwaysSeals: true, strict: false }); // "verified" | "unsealed" | "warning" | "alert"
+```
+
+La [guía de integración](docs/INTEGRATION.md) lleva unos 10 minutos (en inglés): claves, emparejamiento, los cuatro veredictos y qué mostrar en cada uno, con [ejemplos](examples/) ejecutables para Node, el navegador (micrófono) y Rust. Apache-2.0, sin servicio que llamar, sin cuenta.
 
 ## Lo que esto NO es
 
@@ -152,6 +171,8 @@ crates/
   vox-trust-wasm/   el núcleo como módulo WebAssembly (interfaz C simple, sin imports)
   vox-trust-cli/    la herramienta de línea de comandos `vox-trust`
 web/         la demo en el navegador (publicada en vox-trust.github.io/demo/)
+npm/         el paquete npm `vox-trust` (WebAssembly + envoltorio JavaScript + tipos)
+examples/    ejemplos de integración: Node, navegador, Rust
 tests/       pruebas de Node (WebAssembly) y de navegador
 tools/       verificación independiente de vectores
 fuzz/        objetivos de fuzzing (cargo-fuzz) y entradas semilla

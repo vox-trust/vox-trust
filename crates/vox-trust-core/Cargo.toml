@@ -1,6 +1,6 @@
 [package]
 name = "vox-trust-core"
-description = "Reference implementation of the Vox Trust protocol: sealed WAV files (HMAC-SHA-256 or Ed25519), seal layout, trust policy. Draft, not audited."
+description = "Seal real voices, verify them anywhere: reference implementation of the Vox Trust protocol (sealed WAV files with HMAC-SHA-256 or Ed25519, tamper localization, trust policy). Pre-1.0, not audited."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

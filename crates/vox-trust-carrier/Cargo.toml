@@ -1,6 +1,6 @@
 [package]
 name = "vox-trust-carrier"
-description = "Experimental in-band audio carrier for Vox Trust seals: improved spread spectrum in the log-magnitude STFT domain. Measured, not audited."
+description = "Experimental in-band audio watermark for Vox Trust seals (stdm-2: spread-transform dither modulation on log-spectral tiles). Measured, research only, not audited."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
 readme = "README.md"
-keywords = ["audio", "watermark", "spread-spectrum", "provenance", "voice"]
+keywords = ["audio", "watermark", "watermarking", "provenance", "voice"]
 categories = ["multimedia::audio"]
 
 [dependencies]
@@ -17,7 +17,7 @@ realfft = "3.5.0"
 
 [dev-dependencies]
 criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
-vox-trust-core = { path = "../vox-trust-core" }
+vox-trust-core = { path = "../vox-trust-core", version = "0.5.1" }
 
 [[bench]]
 name = "carrier"

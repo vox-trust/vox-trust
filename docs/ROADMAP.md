@@ -4,9 +4,9 @@ An honest plan with the gates that decide whether to continue. No dates are prom
 
 Legend: ✅ done · 🟡 partly done · ⬜ not started
 
-## Where we are (v0.5.0)
+## Where we are (v0.5.1)
 
-**Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo or the command line. It is a **pre-1.0 (specification 0.2), not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
+**Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo, the command line or your own app (npm and crates.io packages, [integration guide](INTEGRATION.md)). It is a **pre-1.0 (specification 0.2), not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
 
 - 🟡 **The audio watermark carrier.** An experimental carrier (stdm-1, now stdm-2) is built and measured against real codecs: it survives MP3, AAC, G.722, Opus at 24 kbit/s and above and small speed changes, but not phone-call codecs (AMR-WB), noise, noise reduction or echo, so it **did not pass the Phase 0 gate**. And because in-band seals are not bound to the audio, anyone can copy a seal into other audio (the copy attack). Until that is solved, only file mode gives verdicts. [Results](../bench/results/2026-10-01-stdm-1/README.md) · [decision](decisions/0001-carrier-phase-0.md)
 - ⬜ **Independent review, an independent implementation, and everything that depends on other people.** Only the author has looked at this code and design (plus automated adversarial reviews, which are not a substitute).
@@ -91,7 +91,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 ## Phase 3: public release
 
-- 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0** (the carrier did not pass its gate); **v0.4.0** adds protected keys, the versioning rules and mutation-tested core code; **v0.5.0** the stdm-2 carrier, a benchmark against published neural watermarks and a comparison with other approaches. A 1.0 waits for an outside review.
+- 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0** (the carrier did not pass its gate); **v0.4.0** adds protected keys, the versioning rules and mutation-tested core code; **v0.5.0** the stdm-2 carrier, a benchmark against published neural watermarks and a comparison with other approaches. **v0.5.1** packages for developers (npm, crates.io) and an integration guide. A 1.0 waits for an outside review.
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
 - 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
 - ⬜ Private vulnerability reporting enabled in the repository settings and tested end to end (SECURITY.md already points to it, with a fallback)

@@ -9,3 +9,8 @@ node_modules/
 *.cdx.json
 mutants-out/
 __pycache__/
+/npm/vox-trust.js
+/npm/vox_trust.wasm
+/npm/LICENSE
+/npm/NOTICE
+/npm/*.tgz

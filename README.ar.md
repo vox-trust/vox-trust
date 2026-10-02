@@ -21,7 +21,7 @@
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-informational">
+  <img alt="Version 0.5.1" src="https://img.shields.io/badge/version-0.5.1-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -67,7 +67,7 @@
 </div>
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.0 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.1 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
@@ -104,6 +104,29 @@ assert_eq!(verify_wav(&sealed, trust)?.check, SealCheck::Valid);
 ```
 
 <div dir="rtl">
+
+## أدمجه في تطبيقك
+
+Vox Trust بروتوكول مفتوح صُمّم ليعمل داخل التطبيقات التي يستخدمها الناس أصلًا: تطبيقات المراسلة والبريد الصوتي وأدوات البودكاست وغرف الأخبار ومنصات الدعم. يُختَم التسجيل عند الإرسال ويُتحقَّق منه عند الاستلام.
+
+</div>
+
+```sh
+npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
+cargo add vox-trust-core     # Rust, no unsafe, no I/O
+```
+
+```js
+import { load } from "vox-trust";
+const vt = await load();
+const sealed = vt.seal(wav, { mode: "public", key: seed, createdUnix, chunkFrames: 16000 });
+const report = vt.verify(sealed, { pinnedPublicKey });
+vt.decide(report.check, { alwaysSeals: true, strict: false }); // "verified" | "unsealed" | "warning" | "alert"
+```
+
+<div dir="rtl">
+
+يستغرق [دليل الدمج](docs/INTEGRATION.md) (بالإنجليزية) نحو 10 دقائق: المفاتيح والاقتران والأحكام الأربعة وما يُعرض لكل منها، مع [أمثلة](examples/) قابلة للتشغيل لـ Node والمتصفح (الميكروفون) وRust. الترخيص Apache-2.0، بلا خدمة خارجية وبلا حساب.
 
 ## ما الذي لا يمثّله هذا
 
@@ -172,6 +195,8 @@ crates/
   vox-trust-wasm/   النواة كوحدة WebAssembly (واجهة C بسيطة، بلا imports)
   vox-trust-cli/    أداة سطر الأوامر `vox-trust`
 web/         العرض التجريبي في المتصفح (منشور على vox-trust.github.io/demo/)
+npm/         حزمة npm `vox-trust` (WebAssembly + غلاف JavaScript + الأنواع)
+examples/    أمثلة الدمج: Node والمتصفح وRust
 tests/       اختبارات Node (WebAssembly) واختبارات المتصفح
 tools/       التحقق المستقل من المتجهات
 fuzz/        أهداف الاختبار العشوائي (cargo-fuzz) ومدخلات البذور

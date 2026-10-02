@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/vox-trust-core", "crates/vox-trust-wasm", "crates/vox-trust-cli", "crates/vox-trust-carrier", "crates/vox-trust-bench"]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 rust-version = "1.94"
 license = "Apache-2.0"

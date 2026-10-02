@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vox Trust: record, seal, verify</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    button { font: inherit; padding: .5rem 1rem; }
+    output { display: block; margin-top: 1rem; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Record, seal, verify</h1>
+  <p>Records 3 seconds from the microphone, seals them with a fresh key and verifies the result. Everything stays in this page.</p>
+  <button id="go" type="button">Record 3 s</button>
+  <output id="out" aria-live="polite"></output>
+  <script type="module">
+    // After `npm install vox-trust`, a bundler resolves "vox-trust". Without one, import the
+    // published file directly, for example from a CDN that serves npm packages:
+    import { load, encodeWav } from "https://cdn.jsdelivr.net/npm/vox-trust@0.5.1/browser.js";
+
+    const out = document.getElementById("out");
+    const vt = await load();
+    const seed = crypto.getRandomValues(new Uint8Array(32));
+    const { publicKey } = vt.publicKey(seed);
+
+    async function record(seconds) {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ctx = new AudioContext();
+      const source = ctx.createMediaStreamSource(stream);
+      const chunks = [];
+      // A ScriptProcessor keeps the example short; use an AudioWorklet in production.
+      const node = ctx.createScriptProcessor(4096, 1, 1);
+      node.onaudioprocess = (e) => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+      source.connect(node);
+      node.connect(ctx.destination);
+      await new Promise((r) => setTimeout(r, seconds * 1000));
+      stream.getTracks().forEach((t) => t.stop());
+      await ctx.close();
+      const floats = new Float32Array(chunks.reduce((n, c) => n + c.length, 0));
+      let at = 0;
+      for (const c of chunks) { floats.set(c, at); at += c.length; }
+      const samples = Int16Array.from(floats, (v) => Math.max(-32768, Math.min(32767, Math.round(v * 32767))));
+      return { samples, sampleRate: ctx.sampleRate };
+    }
+
+    document.getElementById("go").addEventListener("click", async () => {
+      out.textContent = "Recording…";
+      const { samples, sampleRate } = await record(3);
+      const wav = encodeWav(samples, sampleRate);
+      const sealed = vt.seal(wav, { mode: "public", key: seed, createdUnix: Math.floor(Date.now() / 1000), chunkFrames: sampleRate });
+      const report = vt.verify(sealed, { pinnedPublicKey: publicKey });
+      const verdict = vt.decide(report.check, { alwaysSeals: true, strict: false });
+      out.textContent = `Verdict: ${verdict}\nKey id: ${report.key_id}\nChunks: ${report.n_chunks}`;
+    });
+  </script>
+</body>
+</html>
