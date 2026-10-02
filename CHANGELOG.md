@@ -4,7 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+Carrier research: a better experimental carrier, a yardstick from published neural watermarks, and a measured negative result on content binding.
+
+### Added
+- **stdm-2** (experimental carrier): stdm-1 with 9.6 s windows. Through Opus 24 kbit/s 100 % (was 93 %), MP3 then Opus 98 % (was 65 %), AMR-WB 23.85 kbit/s 89 % (was 58 %), at the same quality (PESQ-WB 4.41); no wrong seal, no false alarm. `Params::stdm1()` keeps the old configuration; the two do not read each other's seals.
+- Carrier detector **tempo search** (`max_tempo_pct`, on by default at ±2 %): it re-aligns audio played faster or slower without moving frequencies. A 1 % tempo change goes from 0 % to 84 % of windows recovered.
+- `bench/neural_baselines.py`: AudioSeal and WavMark, used as published, on the same corpus, conditions and quality metrics as our carriers ([results](bench/results/2026-10-02-neural-baselines/README.md)).
+- `bench/content_binding.py` and `bench/content_binding_keyed.py`: a study of binding in-band seals to the audio with a robust fingerprint. **Negative result**: it stops a naive copy but an adaptive attacker defeats it, also with a fingerprint secret to the circle ([study](bench/results/2026-10-02-content-binding/README.md)). The copy attack stays open.
+
 ### Changed
+- Specification section 10: stdm-2 next to stdm-1, the optional tempo search, and the content-binding result in 10.3; `stdm-2` added to the registry. Threat model A2, A11 and A13 updated with the new measurements.
 - CLI: without `--counter`, `seal` stores the creation time in seconds as the counter, so it grows between seals instead of always being 0.
 - CLI: `--passphrase-file` with a plain (unprotected) key is a usage error instead of being ignored.
 - WebAssembly: `vt_alloc` returns null when memory cannot be had, instead of trapping; the JavaScript wrapper reports it (`core_oom`, translated).

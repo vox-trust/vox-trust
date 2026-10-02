@@ -8,3 +8,4 @@
 node_modules/
 *.cdx.json
 mutants-out/
+__pycache__/

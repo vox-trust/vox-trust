@@ -170,7 +170,7 @@ Labels are **not normalized**: a parser MUST NOT apply Unicode normalization (NF
 
 *Key discovery for public mode beyond in-person exchange (DNS, a well-known HTTPS path) is TBD.*
 
-## 10. Carrier interface, and the experimental carrier stdm-1
+## 10. Carrier interface, and the experimental carriers stdm-1 and stdm-2
 
 ### 10.1 Interface
 
@@ -178,23 +178,25 @@ A carrier embeds and extracts a fixed-size payload in PCM audio. Each carrier de
 
 A carrier MUST NOT be trusted for authenticity: it only *carries* the seal. A removed or damaged watermark MUST yield *Absent*, never a forged *Valid*. A carrier SHOULD detect its own decoding errors (for example with a CRC), so that a damaged seal reads as *Absent* rather than *Invalid* (which would raise an *Alert*).
 
-### 10.2 stdm-1 (experimental)
+### 10.2 stdm-1 and stdm-2 (experimental)
 
-> **Experimental.** stdm-1 is the first measured carrier. It did **not** pass the roadmap's Phase 0 gate ([results](../bench/results/2026-10-01-stdm-1/README.md), [decision](../docs/decisions/0001-carrier-phase-0.md)), and because of the copy attack (10.3) an in-band seal MUST NOT be presented to a user as *Verified*. Everything in this subsection may change.
+> **Experimental.** stdm-1 is the first measured carrier and stdm-2 its successor; neither passes the roadmap's Phase 0 gate ([stdm-1 results](../bench/results/2026-10-01-stdm-1/README.md), [stdm-2 results](../bench/results/2026-10-02-stdm-2/README.md), [decisions](../docs/decisions/)), and because of the copy attack (10.3) an in-band seal MUST NOT be presented to a user as *Verified*. Everything in this subsection may change.
+
+**stdm-2** is stdm-1 with windows of `W = 300` tile columns (9.6 s) instead of `W = 200` (6.4 s). Everything below applies to both, with `T = 14 W` tiles per window (2800 for stdm-1, 4200 for stdm-2). The two are not compatible: a seal embedded with one is not found with the other's window.
 
 **Method.** Spread-transform dither modulation (Chen and Wornell, IEEE Trans. Information Theory, 2001) on normalised log-magnitude STFT tiles. The reference implementation is `crates/vox-trust-carrier`; all constants below are its defaults.
 
-**Analysis.** Mono audio at 16 kHz (other rates are resampled first). Frames of N = 512 samples every 256 samples, analysis window `w[n] = sin(pi n / N)`. A detector analyses four grids, starting at sample 0, 64, 128 and 192.
+**Analysis.** Mono audio at 16 kHz (other rates are resampled first). Frames of N = 512 samples every 256 samples, analysis window `w[n] = sin(pi n / N)`. A detector analyses four grids, starting at sample 0, 64, 128 and 192. It MAY also search tempo changes by spacing its frames `256 / s` samples apart for a few factors `s` near 1 (the reference tries 0.98 to 1.02 in steps of 0.005), which re-aligns audio played faster or slower without moving its frequencies; windows found at several factors are kept once.
 
 **Tiles.** Bins 10 to 121 (312.5 to 3812.5 Hz), in 14 subbands of 8 bins; 2 frames per column. A tile's level `L` is the mean, over its 16 bin-frames, of `10 log10(|X|^2 + phi)`, where `phi = 10^-10` times the largest `|X|^2` of the analysed audio (at least `10^-20`). Its value `v` is `L` minus the mean of its column, minus the mean of the same subband's column-normalised levels in the 2 columns on each side (fewer at the edges, never itself).
 
 **Weights.** With `r(x) = min(max(x / 6, 0), 1)`, a column's energy `E` in dB (`10 log10` of the sum of `|X|^2` over its tiles, plus `phi`), the loudest column energy `E_max` and the loudest tile level of the column `L_max`, a tile's weight is `r(E - (E_max - 45)) * r(L - (L_max - 30))`. Silent columns and deep spectral valleys therefore carry no chips.
 
-**Window and pattern.** One seal per window of 200 columns (6.4 s), 2800 tiles numbered `column * 14 + subband`. The public pattern comes from SplitMix64 seeded with `0x766f782d73733101`, consumed in this order:
+**Window and pattern.** One seal per window of `W` columns, `T` tiles numbered `column * 14 + subband`. The public pattern comes from SplitMix64 seeded with `0x766f782d73733101`, consumed in this order:
 
 1. One draw per tile: sign `+1` if the draw is odd, else `-1`.
-2. A Fisher-Yates shuffle of the tile numbers: for `i` from 2799 down to 1, swap `i` with `draw mod (i + 1)`.
-3. The first `floor(2800 / 6)` shuffled tiles are synchronisation tiles, the rest data tiles. `g = floor(data tiles / 248)` chips per group.
+2. A Fisher-Yates shuffle of the tile numbers: for `i` from `T - 1` down to 1, swap `i` with `draw mod (i + 1)`.
+3. The first `floor(T / 6)` shuffled tiles are synchronisation tiles, the rest data tiles. `g = floor(data tiles / 248)` chips per group.
 4. 248 data groups, each drawing a dither (`(draw >> 40) / 2^24`) then a known bit (draw odd); data tile `k` (for `k < 248 g`) joins group `k mod 248`.
 5. `floor(sync tiles / g)` synchronisation groups, drawn and filled the same way from the synchronisation tiles.
 
@@ -208,7 +210,9 @@ A group's **projection** is `P = sum(w s v) / sum(w)` over its chips (undefined 
 
 ### 10.3 Open problem: copy attacks
 
-An in-band seal is not bound to the audio content. Because stdm-1's pattern is public, anyone holding one genuine sealed recording can **read** its seal and **embed it into different audio**, which then carries a genuine seal within the counter/time window. File mode is not affected (its digests bind the content). Binding in-band seals to content (for example with a robust perceptual fingerprint committed in the tag) is unsolved here. See the threat model, attacker A11.
+An in-band seal is not bound to the audio content. Because the carriers' pattern is public, anyone holding one genuine sealed recording can **read** its seal and **embed it into different audio**, which then carries a genuine seal within the counter/time window. File mode is not affected (its digests bind the content). See the threat model, attacker A11.
+
+Committing a robust perceptual fingerprint of the window in the tag was measured and **does not close it** ([study](../bench/results/2026-10-02-content-binding/README.md)): a fingerprint that survives codecs stops a naive copy, but an attacker who reshapes the target audio's coarse band energies matches it, even when the fingerprint is a projection secret to the circle, at a distortion a fake recording can afford. Robustness to codecs and resistance to this forgery pull in opposite directions; the problem stays open.
 
 ## 11. Security considerations
 
@@ -235,7 +239,7 @@ See the [threat model](THREAT-MODEL.md). In short: the design assumes watermarks
 | Manifest magic and RIFF chunk id | `VOXT` |
 | Domain-separation strings | `vox-trust/0/key-id`, `vox-trust/0/circle-seal\0`, `vox-trust/0/file-circle\0`, `vox-trust/0/file-public\0` |
 | Pairing text prefix | `voxtrust:0:` |
-| Carriers | `stdm-1` (experimental, section 10.2) |
+| Carriers | `stdm-1`, `stdm-2` (experimental, section 10.2) |
 
 ## 14. Open questions
 
@@ -243,7 +247,7 @@ See the [threat model](THREAT-MODEL.md). In short: the design assumes watermarks
 2. Public-mode in-band pointer: how a short in-band payload locates a signed manifest, and why a 32-bit pointer must never carry trust (a second preimage costs about 2^32 work).
 3. ~~Time epoch, clock-skew tolerance and counter reset behaviour~~: decided in section 4 (version 0).
 4. Live audio: delayed key disclosure (TESLA-style, RFC 4082) to keep seals small.
-5. Window size versus carrier capacity: measured for stdm-1 (6.4 s for 102 bits; 9.6 s is more robust through Opus). A carrier for AMR-WB and other model-based speech codecs is open.
+5. Window size versus carrier capacity: measured (6.4 s for 102 bits in stdm-1; stdm-2 uses 9.6 s, more robust through Opus). A carrier for AMR-WB and other model-based speech codecs is open.
 6. How an *Alert* for a missing seal is presented without causing panic or false confidence.
 7. Key revocation, and key discovery for public mode.
 8. Alignment with COSE and C2PA for the manifest.

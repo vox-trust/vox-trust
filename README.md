@@ -27,7 +27,7 @@ An open protocol, with a Rust reference implementation, that seals a human voice
   <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-> **Status: v0.3, file mode works. Not audited.** You can seal a WAV file, verify it, and see exactly which seconds were altered, in the [browser demo](https://vox-trust.github.io/demo/) or with the command line. Sealed files survive **only bit-exact copies**. An **experimental** audio watermark that survives MP3, AAC and Opus is built and [measured](bench/results/2026-10-01-stdm-1/README.md), but it fails phone-call codecs and noise, and in-band seals can be copied into other audio, so it gives **no verdicts** yet. Do not use this to protect anyone until it has been reviewed.
+> **Status: v0.4, file mode works. Not audited.** You can seal a WAV file, verify it, and see exactly which seconds were altered, in the [browser demo](https://vox-trust.github.io/demo/) or with the command line. Sealed files survive **only bit-exact copies**. An **experimental** audio watermark that survives MP3, AAC, Opus and small speed changes is built and [measured](bench/results/2026-10-02-stdm-2/README.md), but it fails phone-call codecs and noise, and in-band seals can be copied into other audio, so it gives **no verdicts** yet. Do not use this to protect anyone until it has been reviewed.
 
 ## The problem
 

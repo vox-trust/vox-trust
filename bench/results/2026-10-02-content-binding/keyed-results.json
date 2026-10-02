@@ -1,0 +1,46 @@
+{
+  "windows": 15,
+  "bits": 16,
+  "grids": {
+    "4x9": {
+      "genuine_bit_agreement": {
+        "mp3-64k": 0.9958333333333333,
+        "opus-24k": 0.9791666666666666,
+        "amr-wb-12.65k": 0.9666666666666667,
+        "noise-30db": 0.8625
+      },
+      "attack_bit_agreement": 0.875,
+      "attack_snr_db_median": 6.733548164367676
+    },
+    "12x12": {
+      "genuine_bit_agreement": {
+        "mp3-64k": 0.9875,
+        "opus-24k": 0.9708333333333333,
+        "amr-wb-12.65k": 0.9291666666666667,
+        "noise-30db": 0.8583333333333333
+      },
+      "attack_bit_agreement": 0.8,
+      "attack_snr_db_median": 6.0538129806518555
+    },
+    "24x16": {
+      "genuine_bit_agreement": {
+        "mp3-64k": 0.9958333333333333,
+        "opus-24k": 0.9791666666666666,
+        "amr-wb-12.65k": 0.9666666666666667,
+        "noise-30db": 0.8333333333333334
+      },
+      "attack_bit_agreement": 0.85625,
+      "attack_snr_db_median": 3.5680460929870605
+    },
+    "48x24": {
+      "genuine_bit_agreement": {
+        "mp3-64k": 0.9708333333333333,
+        "opus-24k": 0.9333333333333333,
+        "amr-wb-12.65k": 0.9208333333333333,
+        "noise-30db": 0.8333333333333334
+      },
+      "attack_bit_agreement": 0.6375,
+      "attack_snr_db_median": 1.7258226871490479
+    }
+  }
+}

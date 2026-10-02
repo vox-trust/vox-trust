@@ -97,10 +97,12 @@ pip install imageio-ffmpeg==0.6.0 pesq pystoi numpy soundfile   # the ffmpeg 7.0
 FF=$(python3 -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())")
 bench/fetch-corpus.sh "$FF"
 cargo build --release -p vox-trust-bench
-target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/default --seals 3
-target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/quality --seals 3 --step 5 --max-db 3.5
-target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/robust --seals 3 --step 9 --max-db 5.5
-target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/long-window --seals 3 --columns 300
+# stdm-1 settings; since 2026-10-02 the defaults are stdm-2 (300 columns, tempo search)
+S1="--columns 200 --max-tempo 0"
+target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/default --seals 3 $S1
+target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/quality --seals 3 $S1 --step 5 --max-db 3.5
+target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/robust --seals 3 $S1 --step 9 --max-db 5.5
+target/release/vt-bench --ffmpeg "$FF" --out bench/results/runs/long-window --seals 3 --columns 300 --max-tempo 0
 for r in default quality robust long-window; do python3 bench/quality.py bench/results/runs/$r; done
 ```
 

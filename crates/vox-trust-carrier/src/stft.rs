@@ -34,10 +34,21 @@ impl Stft {
 
     /// Frames starting at `shift`, `shift + HOP`, ... that fit entirely in `samples`.
     pub(crate) fn analyse(&mut self, samples: &[f32], shift: usize) -> Vec<Spectrum> {
+        self.analyse_hop(samples, shift, HOP as f64)
+    }
+
+    /// Frames starting at `shift + round(k * hop)`: a fractional hop undoes a tempo change
+    /// (a hop of `HOP / 1.01` re-aligns audio played 1 % faster) without moving any
+    /// frequency.
+    pub(crate) fn analyse_hop(&mut self, samples: &[f32], shift: usize, hop: f64) -> Vec<Spectrum> {
         let mut frames = Vec::new();
         let mut input = self.forward.make_input_vec();
-        let mut start = shift;
-        while start + FRAME <= samples.len() {
+        let mut k = 0usize;
+        loop {
+            let start = shift + (k as f64 * hop).round() as usize;
+            if start + FRAME > samples.len() {
+                break;
+            }
             for (i, v) in input.iter_mut().enumerate() {
                 *v = samples[start + i] * self.window[i];
             }
@@ -46,7 +57,7 @@ impl Stft {
                 .process(&mut input, &mut out)
                 .expect("buffer sizes come from the plan");
             frames.push(out);
-            start += HOP;
+            k += 1;
         }
         frames
     }

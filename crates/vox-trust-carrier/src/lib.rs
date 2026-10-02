@@ -1,4 +1,5 @@
-//! Experimental in-band carrier for Vox Trust seals ("stdm-1").
+//! Experimental in-band carrier for Vox Trust seals ("stdm-2"; "stdm-1" via
+//! [`Params::stdm1`]).
 //!
 //! **Status: experimental and measured, not reviewed.** A carrier only *carries* the 13-byte
 //! seal; it never decides authenticity (spec section 10). A missing or damaged watermark must
@@ -26,9 +27,14 @@
 //!   volume changes, the classic weakness of quantisation methods.
 //! - Embedding is closed-loop: it re-analyses the marked audio and corrects the remaining
 //!   error a few times, because STFT frames overlap.
-//! - The detector searches every time offset (to a quarter of a hop), scores how closely the
+//! - The detector searches every time offset (to a quarter of a hop) and, optionally, small
+//!   tempo changes (by spacing its analysis frames differently), scores how closely the
 //!   synchronisation groups sit on their lattices, decodes the candidates far above chance
 //!   with a soft Viterbi decoder, and keeps a result only if the CRC matches.
+//!
+//! stdm-2 differs from stdm-1 only in its window: 300 tile columns (9.6 s) instead of 200
+//! (6.4 s), which the benchmark showed to be more robust at the same quality. The detector's
+//! tempo search is on by default (plus or minus 2 %); it does not change the format.
 //!
 //! The pattern is public: anyone can detect a seal, and anyone can try to remove it (which
 //! yields *Absent*). **Anyone can also read a seal from one recording and embed it into
@@ -88,8 +94,15 @@ pub struct Params {
     pub valley_db: f32,
     /// Seed of the public chip pattern.
     pub pattern_seed: u64,
+    /// Detector only: also search tempo changes up to this many percent either way, in
+    /// steps of [`TEMPO_STEP_PCT`] (0 disables the search). It does not change the format.
+    pub max_tempo_pct: f32,
 }
 
+/// Step of the detector's tempo search, in percent.
+pub const TEMPO_STEP_PCT: f32 = 0.5;
+
+/// stdm-2.
 impl Default for Params {
     fn default() -> Self {
         Params {
@@ -97,7 +110,7 @@ impl Default for Params {
             hi_bin: 122,
             tile_bins: 8,
             tile_frames: 2,
-            columns: 200,
+            columns: 300,
             sync_every: 6,
             step_db: 7.0,
             max_db: 4.5,
@@ -106,11 +119,22 @@ impl Default for Params {
             valley_db: 30.0,
             // "vox-ss1\x01" in ASCII: the seed of the measured configuration.
             pattern_seed: 0x766f_782d_7373_3101,
+            max_tempo_pct: 2.0,
         }
     }
 }
 
 impl Params {
+    /// stdm-1, the first measured configuration: 200-column (6.4 s) windows, no tempo
+    /// search. Its seals are not readable with the stdm-2 defaults, and the reverse.
+    pub fn stdm1() -> Params {
+        Params {
+            columns: 200,
+            max_tempo_pct: 0.0,
+            ..Params::default()
+        }
+    }
+
     /// Number of subbands per column.
     pub fn subbands(&self) -> usize {
         (self.hi_bin - self.lo_bin) / self.tile_bins
@@ -136,7 +160,8 @@ impl Params {
             && self.sync_every >= 2
             && self.columns > 0
             && self.step_db > 0.0
-            && self.max_db > 0.0;
+            && self.max_db > 0.0
+            && (0.0..=10.0).contains(&self.max_tempo_pct);
         if !ok {
             return Err(CarrierError::BadParams);
         }
@@ -271,22 +296,51 @@ fn expand_to_frames(tile_db: &[f32], p: &Params, frames: usize) -> Vec<f32> {
 
 /// Searches `samples` (mono, 16 kHz) for sealed windows and returns every window whose
 /// synchronisation and CRC both pass, strongest first. An empty result means *Absent*.
+///
+/// With `max_tempo_pct > 0`, the search is repeated at each tempo in the range (audio
+/// played faster or slower, same pitch), and windows found at several tempos are kept once,
+/// with their best score.
 pub fn detect(samples: &[f32], params: &Params) -> Result<Vec<Detection>, CarrierError> {
-    let scan = Scan::new(samples, params)?;
+    let mut found = detect_at(&Scan::new(samples, params)?, params);
+    let steps = (params.max_tempo_pct / TEMPO_STEP_PCT).floor() as i32;
+    for k in (1..=steps).flat_map(|k| [k, -k]) {
+        let tempo = 1.0 + f64::from(k) * f64::from(TEMPO_STEP_PCT) / 100.0;
+        match Scan::with_tempo(samples, params, tempo) {
+            Ok(scan) => found.extend(detect_at(&scan, params)),
+            Err(CarrierError::TooShort) => continue,
+            Err(e) => return Err(e),
+        }
+    }
+    found.sort_by(|a, b| b.sync_score.total_cmp(&a.sync_score));
+    let min_gap = params.window_samples() / 2;
+    let mut kept: Vec<Detection> = Vec::new();
+    for d in found {
+        if kept
+            .iter()
+            .all(|k| k.start_sample.abs_diff(d.start_sample) >= min_gap)
+        {
+            kept.push(d);
+        }
+    }
+    Ok(kept)
+}
+
+fn detect_at(scan: &Scan, params: &Params) -> Vec<Detection> {
     let mut found: Vec<Detection> = Vec::new();
     for cand in scan.candidates() {
         let soft = scan.soft_bits(cand.shift, cand.col0);
         let Some(seal) = fec::seal_from_info(&fec::decode(&soft)) else {
             continue;
         };
+        let column = (params.tile_frames * HOP) as f64 / scan.tempo;
         found.push(Detection {
             seal,
-            start_sample: cand.shift + cand.col0 * params.tile_frames * HOP,
+            start_sample: cand.shift + (cand.col0 as f64 * column).round() as usize,
             sync_score: cand.score,
         });
     }
     found.sort_by(|a, b| b.sync_score.total_cmp(&a.sync_score));
-    Ok(found)
+    found
 }
 
 /// Low-level access to the detector, for measurement (bit error rates, score
@@ -296,6 +350,8 @@ pub struct Scan {
     layout: Layout,
     /// Per quarter-hop shift: tile features of every column.
     shifts: Vec<Features>,
+    /// Tempo the analysis assumes (1.0 = unchanged; 1.01 = played 1 % faster).
+    tempo: f64,
 }
 
 /// A synchronisation candidate.
@@ -312,12 +368,21 @@ pub struct Candidate {
 impl Scan {
     /// Analyses the audio at four quarter-hop shifts.
     pub fn new(samples: &[f32], params: &Params) -> Result<Scan, CarrierError> {
+        Scan::with_tempo(samples, params, 1.0)
+    }
+
+    /// Analyses the audio as if it had been played `tempo` times faster (same pitch), by
+    /// spacing the analysis frames `HOP / tempo` samples apart.
+    pub fn with_tempo(samples: &[f32], params: &Params, tempo: f64) -> Result<Scan, CarrierError> {
         params.validate()?;
+        if !(0.5..=2.0).contains(&tempo) {
+            return Err(CarrierError::BadParams);
+        }
         let mut stft = Stft::new();
         let mut shifts = Vec::new();
         for s in 0..4 {
             let shift = s * HOP / 4;
-            let frames = stft.analyse(samples, shift);
+            let frames = stft.analyse_hop(samples, shift, HOP as f64 / tempo);
             // A shifted grid may be one column short of a window; only the unshifted grid
             // has to hold one.
             if s == 0 && frames.len() / params.tile_frames < params.columns {
@@ -329,6 +394,7 @@ impl Scan {
             params: params.clone(),
             layout: Layout::new(params),
             shifts,
+            tempo,
         })
     }
 

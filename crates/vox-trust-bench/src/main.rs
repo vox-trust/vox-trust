@@ -11,6 +11,7 @@
 //!            [--seals N] [--jobs N] [--only cond1,cond2] [carrier overrides]
 //! Carrier overrides: --step DB --max-db DB --columns N --tile-bins N --tile-frames N
 //!                    --sync-every N --valley DB --lo-bin N --hi-bin N --threshold Z --seed N
+//!                    --max-tempo PCT (detector only: tempo search)
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -192,6 +193,7 @@ fn parse_args() -> Result<Args, String> {
             "--step" => a.params.step_db = num(val()?)? as f32,
             "--max-db" => a.params.max_db = num(val()?)? as f32,
             "--columns" => a.params.columns = num(val()?)? as usize,
+            "--max-tempo" => a.params.max_tempo_pct = num(val()?)? as f32,
             "--tile-bins" => a.params.tile_bins = num(val()?)? as usize,
             "--tile-frames" => a.params.tile_frames = num(val()?)? as usize,
             "--sync-every" => a.params.sync_every = num(val()?)? as usize,

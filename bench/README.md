@@ -1,10 +1,12 @@
 # Benchmark
 
-Measures how the experimental in-band carrier (`crates/vox-trust-carrier`, "stdm-1")
+Measures how the experimental in-band carrier (`crates/vox-trust-carrier`, "stdm-2", earlier "stdm-1")
 survives real audio paths, and what it costs in audio quality. Results are published
 whatever they are.
 
-- **Latest results:** [results/2026-10-01-stdm-1](results/2026-10-01-stdm-1/README.md)
+- **Latest results:** [results/2026-10-02-stdm-2](results/2026-10-02-stdm-2/README.md) (earlier: [stdm-1](results/2026-10-01-stdm-1/README.md))
+- **Yardstick, published neural watermarks:** [results/2026-10-02-neural-baselines](results/2026-10-02-neural-baselines/README.md)
+- **Content binding study (negative result):** [results/2026-10-02-content-binding](results/2026-10-02-content-binding/README.md)
 - **Corpus and licences:** [CORPUS.md](CORPUS.md)
 - **Decision taken from them:** [docs/decisions/0001-carrier-phase-0.md](../docs/decisions/0001-carrier-phase-0.md)
 
@@ -16,6 +18,8 @@ whatever they are.
 | `crates/vox-trust-bench` (`vt-bench`) | Embeds seals, sends the audio through each condition (real codecs via ffmpeg, plus noise, trimming, echo, tempo), detects, counts exact recoveries, wrong seals and false alarms |
 | `quality.py` | PESQ-WB (ITU-T P.862.2) and STOI of the marked audio against the original |
 | `summarize.py` | Comparison table across operating points |
+| `neural_baselines.py` | AudioSeal and WavMark on the same corpus and conditions (needs PyTorch) |
+| `content_binding.py`, `content_binding_keyed.py` | Study of binding an in-band seal to its audio with a robust fingerprint |
 
 ## Run
 

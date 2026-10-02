@@ -51,7 +51,7 @@ fn expected_seal() -> [u8; SEAL_BYTES] {
 #[test]
 fn round_trip_finds_every_window() {
     let p = Params::default();
-    let audio = voice(14.0, 1);
+    let audio = voice(20.0, 1);
     let marked = embed(&audio, &SEAL, &p).unwrap();
     let hits = found(&marked);
     let windows = audio.len() / p.window_samples();
@@ -65,14 +65,14 @@ fn round_trip_finds_every_window() {
 #[test]
 fn unmarked_audio_is_absent() {
     for seed in 1..4 {
-        assert!(found(&voice(14.0, seed)).is_empty());
+        assert!(found(&voice(20.0, seed)).is_empty());
     }
 }
 
 #[test]
 fn survives_a_delay_and_a_gain_change() {
     let p = Params::default();
-    let marked = embed(&voice(14.0, 2), &SEAL, &p).unwrap();
+    let marked = embed(&voice(20.0, 2), &SEAL, &p).unwrap();
     let mut rng = Lcg(9);
     let mut shifted: Vec<f32> = (0..1_234).map(|_| 0.001 * rng.next()).collect();
     shifted.extend(marked.iter().map(|x| 0.3 * x));
@@ -89,7 +89,7 @@ fn survives_a_delay_and_a_gain_change() {
 #[test]
 fn damage_yields_absent_never_a_different_seal() {
     let p = Params::default();
-    let audio = voice(14.0, 3);
+    let audio = voice(20.0, 3);
     let marked = embed(&audio, &SEAL, &p).unwrap();
     let power = marked.iter().map(|x| x * x).sum::<f32>() / marked.len() as f32;
     for (seed, snr_db) in [(5u64, 30.0f32), (6, 20.0), (7, 10.0), (8, 0.0)] {
@@ -109,7 +109,7 @@ fn damage_yields_absent_never_a_different_seal() {
 #[test]
 fn audio_after_the_last_window_is_unchanged() {
     let p = Params::default();
-    let audio = voice(9.0, 4);
+    let audio = voice(12.0, 4);
     let marked = embed(&audio, &SEAL, &p).unwrap();
     let end = p.window_samples() + FRAME;
     assert_eq!(&marked[end..], &audio[end..]);
@@ -119,7 +119,7 @@ fn audio_after_the_last_window_is_unchanged() {
 #[test]
 fn the_change_is_small() {
     let p = Params::default();
-    let audio = voice(14.0, 5);
+    let audio = voice(20.0, 5);
     let marked = embed(&audio, &SEAL, &p).unwrap();
     let signal: f32 = audio.iter().map(|x| x * x).sum();
     let noise: f32 = audio
@@ -134,7 +134,7 @@ fn the_change_is_small() {
 #[test]
 fn a_different_pattern_does_not_detect() {
     let p = Params::default();
-    let marked = embed(&voice(14.0, 6), &SEAL, &p).unwrap();
+    let marked = embed(&voice(20.0, 6), &SEAL, &p).unwrap();
     let other = Params {
         pattern_seed: 42,
         ..Params::default()
@@ -158,7 +158,7 @@ fn errors() {
         ..Params::default()
     };
     assert_eq!(
-        embed(&voice(14.0, 7), &SEAL, &bad),
+        embed(&voice(20.0, 7), &SEAL, &bad),
         Err(CarrierError::BadParams)
     );
 }
@@ -166,8 +166,55 @@ fn errors() {
 #[test]
 fn capacity_of_the_default_configuration() {
     let p = Params::default();
-    assert_eq!(p.window_samples(), 102_400);
-    assert!((p.capacity_bps() - 15.9375).abs() < 1e-3);
+    assert_eq!(p.window_samples(), 153_600);
+    assert!((p.capacity_bps() - 10.625).abs() < 1e-3);
+    let one = Params::stdm1();
+    assert_eq!(one.window_samples(), 102_400);
+    assert!((one.capacity_bps() - 15.9375).abs() < 1e-3);
+}
+
+#[test]
+fn stdm1_and_stdm2_do_not_read_each_other() {
+    let audio = voice(20.0, 10);
+    let (one, two) = (Params::stdm1(), Params::default());
+    let marked1 = embed(&audio, &SEAL, &one).unwrap();
+    assert_eq!(detect(&marked1, &one).unwrap().len(), 3);
+    assert!(detect(&marked1, &two).unwrap().is_empty());
+    let marked2 = embed(&audio, &SEAL, &two).unwrap();
+    assert!(detect(&marked2, &one).unwrap().is_empty());
+}
+
+/// Plays `x` `tempo` times faster by linear interpolation (this also moves pitch by the same
+/// factor, which the tiles tolerate at 1 %; the benchmark uses a pitch-preserving tempo).
+fn faster(x: &[f32], tempo: f64) -> Vec<f32> {
+    let n = ((x.len() - 1) as f64 / tempo) as usize;
+    (0..n)
+        .map(|i| {
+            let t = i as f64 * tempo;
+            let (k, f) = (t as usize, (t - t.floor()) as f32);
+            x[k] * (1.0 - f) + x[(k + 1).min(x.len() - 1)] * f
+        })
+        .collect()
+}
+
+#[test]
+fn the_tempo_search_finds_audio_played_faster() {
+    let p = Params::default();
+    let marked = embed(&voice(20.0, 11), &SEAL, &p).unwrap();
+    let sped = faster(&marked, 1.01);
+    let hits = detect(&sped, &p).unwrap();
+    assert!(!hits.is_empty(), "found nothing at +1 %");
+    assert!(hits.iter().all(|h| h.seal == expected_seal()));
+    let without = Params {
+        max_tempo_pct: 0.0,
+        ..p.clone()
+    };
+    assert!(detect(&sped, &without).unwrap().is_empty());
+    let bad = Params {
+        max_tempo_pct: 11.0,
+        ..p
+    };
+    assert_eq!(detect(&sped, &bad).unwrap_err(), CarrierError::BadParams);
 }
 
 #[test]
@@ -184,7 +231,7 @@ fn audio_of_exactly_one_window_is_found() {
 #[test]
 fn out_of_range_positions_do_not_panic() {
     let p = Params::default();
-    let scan = Scan::new(&voice(8.0, 9), &p).unwrap();
+    let scan = Scan::new(&voice(11.0, 9), &p).unwrap();
     assert_eq!(scan.sync_score(0, 10_000), 0.0);
     assert_eq!(scan.sync_score(7, 0), 0.0);
     assert_eq!(scan.sync_score(HOP, 0), 0.0);
