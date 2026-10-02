@@ -12,6 +12,9 @@ Carrier research: a better experimental carrier, a yardstick from published neur
 - `bench/neural_baselines.py`: AudioSeal and WavMark, used as published, on the same corpus, conditions and quality metrics as our carriers ([results](bench/results/2026-10-02-neural-baselines/README.md)). WavMark survives noise reduction, echo, tempo and partly AMR-WB, where stdm-2 fails; it is the lead for the next carrier, to be measured with a full 102-bit seal.
 - `bench/content_binding.py` and `bench/content_binding_keyed.py`: a study of binding in-band seals to the audio with a robust fingerprint. **Negative result**: it stops a naive copy but an adaptive attacker defeats it, also with a fingerprint secret to the circle ([study](bench/results/2026-10-02-content-binding/README.md)). The copy attack stays open.
 
+- README (five languages) and website: a feature comparison with Google SynthID, Meta AudioSeal, Resemble PerTh, deepfake detectors and C2PA, sourced cell by cell in `docs/COMPARISON.md`.
+- A parameter sweep of stdm-2 on noise and AMR-WB: tuning buys about ten points of noise robustness and at most 24 % through AMR-WB 12.65 kbit/s at an audible cost; the default is unchanged.
+
 ### Changed
 - Specification section 10: stdm-2 next to stdm-1, the optional tempo search, and the content-binding result in 10.3; `stdm-2` added to the registry. Threat model A2, A11 and A13 updated with the new measurements.
 - CLI: without `--counter`, `seal` stores the creation time in seconds as the counter, so it grows between seals instead of always being 0.

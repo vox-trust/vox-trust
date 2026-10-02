@@ -129,6 +129,24 @@ The Python check is written by the same author, so it is a cross-check, not an i
 
 Perceptual quality of the marked audio: PESQ-WB 4.41 out of about 4.64. It **does not pass** the project's own gate, and a public carrier lets anyone copy a seal into other audio ([threat model, A11](spec/THREAT-MODEL.md)). Binding the seal to the audio with a robust fingerprint was tried and an adaptive attacker defeats it ([study](bench/results/2026-10-02-content-binding/README.md)). So the carrier is for research and measurement only: the CLI, the demo and the verdicts use file mode. Re-run it with [`bench/`](bench/README.md).
 
+## How it compares
+
+Most of the industry marks **AI output** so it can be recognised later. Vox Trust does the opposite: it vouches for **real human speech**, with a proof anyone can check.
+
+| | **Vox Trust** | Google SynthID | Meta AudioSeal | Resemble PerTh | Deepfake detectors¹ | C2PA |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| Vouches for a real human recording | ✅ | ❌ marks AI output | ❌ marks AI output | ❌ marks AI output | ⚠️ estimates | ✅ if the recording app signs |
+| Proof bound to the speaker's own key | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ signer certificate |
+| Points to the seconds that were altered | ✅ | ❌ | ⚠️ marked vs unmarked regions | ❌ | ❌ | ❌ whole file |
+| Anyone can verify, offline | ✅ in the browser | ❌ Google's detector | ✅ | ⚠️ | ❌ | ✅ |
+| Open specification and code | ✅ | ❌ for audio | ✅ code | ⚠️ code | ❌ | ✅ specification |
+| Survives MP3, AAC, Opus | ⚠️ experimental carrier, 100 % measured | ✅ claimed | ✅ measured | ✅ claimed | not applicable | ❌ metadata is often stripped |
+| Survives phone calls (AMR-WB) | ❌ 11 % | not published | ❌ 0 % measured | not published | ✅ | ❌ |
+| Cost to verify | milliseconds, no AI model | cloud service | neural network | neural network | cloud service | milliseconds |
+| Public benchmark, failures included | ✅ | ❌ | research paper | ❌ | vendor figures | not applicable |
+
+"Measured" means run on [our benchmark](bench/results/2026-10-02-neural-baselines/README.md) with the same corpus and codecs; "claimed" means the vendor's published figure. ¹ For example [Pindrop Pulse](https://www.pindrop.com/article/pindrop-pulse-for-audio-deepfake-detection/): it estimates whether a voice is synthetic, which is useful but a probability, not proof of who spoke. Sources for every cell are in the [comparison notes](docs/COMPARISON.md).
+
 ## Where this fits
 
 Vox Trust builds on and complements existing work rather than replacing it:

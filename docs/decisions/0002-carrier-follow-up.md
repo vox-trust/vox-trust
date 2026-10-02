@@ -48,8 +48,9 @@ metrics.
 - Next measurement: WavMark (or a WavMark-like network) with a full 102-bit payload, on the
   whole condition set.
 - Phone calls (AMR-WB 12.65 kbit/s) defeat stdm-2 and AudioSeal and only partly let WavMark
-  through: a carrier built for model-based speech codecs remains the open robustness
-  problem.
+  through. Tuning stdm-2 reaches at most 24 % at an audible cost ([sweep](../../bench/results/2026-10-02-stdm-2/README.md)),
+  so a carrier built for model-based speech codecs (in the domain the codec keeps, such as
+  line spectral frequencies, or trained for it) remains the open robustness problem.
 - Content binding needs something an attacker cannot reproduce without the original audio;
   until then file mode is the only mode with verdicts.
 - The detector is about 8 times slower with the tempo search; acceptable for files, to be

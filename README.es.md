@@ -115,6 +115,24 @@ La CI ejecuta las pruebas de Rust en Linux, macOS y Windows.
 
 La verificación en Python la escribió el mismo autor, así que es una verificación cruzada, no una implementación independiente. [Una implementación independiente es lo que la especificación todavía necesita.](docs/ROADMAP.md)
 
+## Cómo se compara
+
+Casi toda la industria marca el **audio generado por IA** para reconocerlo después. Vox Trust hace lo contrario: avala el **habla humana real**, con una prueba que cualquiera puede comprobar.
+
+| | **Vox Trust** | Google SynthID | Meta AudioSeal | Resemble PerTh | Detectores de deepfakes¹ | C2PA |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| Avala una grabación humana real | ✅ | ❌ marca salida de IA | ❌ marca salida de IA | ❌ marca salida de IA | ⚠️ estima | ✅ si la app de grabación firma |
+| Prueba ligada a la clave del propio hablante | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ certificado del firmante |
+| Señala los segundos alterados | ✅ | ❌ | ⚠️ regiones marcadas o no | ❌ | ❌ | ❌ archivo completo |
+| Cualquiera verifica, sin conexión | ✅ en el navegador | ❌ detector de Google | ✅ | ⚠️ | ❌ | ✅ |
+| Especificación y código abiertos | ✅ | ❌ para audio | ✅ código | ⚠️ código | ❌ | ✅ especificación |
+| Sobrevive a MP3, AAC, Opus | ⚠️ marca de agua experimental, 100 % medido | ✅ declarado | ✅ medido | ✅ declarado | no aplica | ❌ los metadatos suelen eliminarse |
+| Sobrevive a llamadas (AMR-WB) | ❌ 11 % | no publicado | ❌ 0 % medido | no publicado | ✅ | ❌ |
+| Coste de verificar | milisegundos, sin modelo de IA | servicio en la nube | red neuronal | red neuronal | servicio en la nube | milisegundos |
+| Benchmark público, con los fallos | ✅ | ❌ | artículo científico | ❌ | cifras del proveedor | no aplica |
+
+"Medido" significa ejecutado en [nuestro benchmark](bench/results/2026-10-02-neural-baselines/README.md), con el mismo corpus y los mismos códecs; "declarado" es la cifra publicada por el proveedor. ¹ Por ejemplo [Pindrop Pulse](https://www.pindrop.com/article/pindrop-pulse-for-audio-deepfake-detection/): estima si una voz es sintética, lo cual es útil, pero es una probabilidad, no una prueba de quién habló. Las fuentes de cada celda están en las [notas de la comparación](docs/COMPARISON.md) (en inglés).
+
 ## Dónde encaja
 
 Vox Trust se apoya en el trabajo existente y lo complementa, en lugar de reemplazarlo:

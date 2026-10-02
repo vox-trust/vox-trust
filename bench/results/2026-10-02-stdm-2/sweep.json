@@ -1,0 +1,104 @@
+{
+  "base": {
+    "recovered": {
+      "original": 1.0,
+      "noise-20db": 0.0,
+      "noise-30db": 0.511,
+      "mp3-64k": 1.0,
+      "opus-24k": 1.0,
+      "amr-wb-12.65k": 0.111,
+      "amr-wb-23.85k": 0.889,
+      "g722": 1.0,
+      "denoise": 0.067
+    },
+    "false_alarms": 0,
+    "wrong_seals": 0,
+    "pesq_wb_mean": 4.411,
+    "pesq_wb_min": 3.93
+  },
+  "step11": {
+    "recovered": {
+      "original": 1.0,
+      "noise-20db": 0.0,
+      "noise-30db": 0.644,
+      "mp3-64k": 1.0,
+      "opus-24k": 1.0,
+      "amr-wb-12.65k": 0.244,
+      "amr-wb-23.85k": 0.889,
+      "g722": 1.0,
+      "denoise": 0.156
+    },
+    "false_alarms": 0,
+    "wrong_seals": 0,
+    "pesq_wb_mean": 3.911,
+    "pesq_wb_min": 3.071
+  },
+  "step9": {
+    "recovered": {
+      "original": 1.0,
+      "noise-20db": 0.0,
+      "noise-30db": 0.622,
+      "mp3-64k": 1.0,
+      "opus-24k": 1.0,
+      "amr-wb-12.65k": 0.2,
+      "amr-wb-23.85k": 0.956,
+      "g722": 1.0,
+      "denoise": 0.089
+    },
+    "false_alarms": 0,
+    "wrong_seals": 0,
+    "pesq_wb_mean": 4.198,
+    "pesq_wb_min": 3.527
+  },
+  "step9valley20": {
+    "recovered": {
+      "original": 1.0,
+      "noise-20db": 0.0,
+      "noise-30db": 0.489,
+      "mp3-64k": 1.0,
+      "opus-24k": 1.0,
+      "amr-wb-12.65k": 0.156,
+      "amr-wb-23.85k": 0.844,
+      "g722": 1.0,
+      "denoise": 0.022
+    },
+    "false_alarms": 0,
+    "wrong_seals": 0,
+    "pesq_wb_mean": 4.232,
+    "pesq_wb_min": 3.638
+  },
+  "sync8": {
+    "recovered": {
+      "original": 1.0,
+      "noise-20db": 0.0,
+      "noise-30db": 0.111,
+      "mp3-64k": 1.0,
+      "opus-24k": 0.956,
+      "amr-wb-12.65k": 0.0,
+      "amr-wb-23.85k": 0.622,
+      "g722": 1.0,
+      "denoise": 0.0
+    },
+    "false_alarms": 0,
+    "wrong_seals": 0,
+    "pesq_wb_mean": 4.423,
+    "pesq_wb_min": 3.965
+  },
+  "valley20": {
+    "recovered": {
+      "original": 1.0,
+      "noise-20db": 0.0,
+      "noise-30db": 0.289,
+      "mp3-64k": 1.0,
+      "opus-24k": 0.911,
+      "amr-wb-12.65k": 0.0,
+      "amr-wb-23.85k": 0.644,
+      "g722": 1.0,
+      "denoise": 0.0
+    },
+    "false_alarms": 0,
+    "wrong_seals": 0,
+    "pesq_wb_mean": 4.428,
+    "pesq_wb_min": 4.015
+  }
+}

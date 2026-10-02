@@ -49,6 +49,27 @@ the original tempo only; the false-alarm count covers the full tempo search.
 24.5 s for stdm-1 on 2026-10-01, on different machines; still much faster than real
 time).
 
+## Can tuning buy noise and phone-call robustness?
+
+A sweep of stdm-2 parameters on the hard conditions (3 seals per recording, tempo search
+off to save time; `sweep.json`):
+
+| Variant | noise 30 dB | AMR-WB 12.65k | AMR-WB 23.85k | Opus 24k, G.722, MP3 64k | noise reduction | PESQ-WB mean (min) |
+|---|---:|---:|---:|---:|---:|---:|
+| stdm-2 (step 7 dB) | 51 % | 11 % | 89 % | 100 % | 7 % | 4.41 (3.93) |
+| step 9 dB, max 5.5 dB | 62 % | 20 % | 96 % | 100 % | 9 % | 4.20 (3.53) |
+| step 11 dB, max 6.5 dB | 64 % | 24 % | 89 % | 100 % | 16 % | 3.91 (3.07) |
+| step 9 dB, valleys under 20 dB ignored | 49 % | 16 % | 84 % | 100 % | 2 % | 4.23 (3.64) |
+| valleys under 20 dB ignored | 29 % | 0 % | 64 % | 91 to 100 % | 0 % | 4.43 (4.01) |
+| one sync tile in 8 | 11 % | 0 % | 62 % | 96 to 100 % | 0 % | 4.42 (3.96) |
+
+Windows of 12.8 s do not fit the shorter recordings and were dropped. **Tuning buys about
+ten points of noise robustness and at most 24 % through AMR-WB 12.65k, and costs audible
+quality.** The default stays at step 7 dB. AMR-WB rebuilds speech from a model of its
+spectral envelope and excitation, and stdm chips live in the fine detail it discards; a
+carrier for phone calls has to live in what the codec keeps (for example the envelope's
+line spectral frequencies) or be trained for it, as WavMark is.
+
 ## What changed and why
 
 - **Window:** the 9.6 s operating point was already measured on 2026-10-01 ("long window")
