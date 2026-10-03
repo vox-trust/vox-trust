@@ -16,6 +16,8 @@ An open protocol, with a Rust reference implementation, that seals a human voice
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
   <img alt="Version 0.6.0" src="https://img.shields.io/badge/version-0.6.0-informational">
+  <a href="https://crates.io/crates/vox-trust-core"><img alt="crates.io" src="https://img.shields.io/crates/v/vox-trust-core"></a>
+  <a href="https://www.npmjs.com/package/vox-trust"><img alt="npm" src="https://img.shields.io/npm/v/vox-trust"></a>
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
