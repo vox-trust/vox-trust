@@ -45,8 +45,10 @@ metrics.
 
 ## Consequences and next steps
 
-- Next measurement: WavMark (or a WavMark-like network) with a full 102-bit payload, on the
-  whole condition set.
+- ~~Next measurement: WavMark with a full 102-bit payload.~~ Done 2026-10-03, negative: with a
+  real seal it fails AMR-WB, noise reduction and noise, as its published 2.35 % bit error rate
+  without repetition predicted ([results](../../bench/results/2026-10-03-wavmark-seal/README.md)).
+  The WavMark lead is closed; a phone-call carrier needs a different design.
 - Phone calls (AMR-WB 12.65 kbit/s) defeat stdm-2 and AudioSeal and only partly let WavMark
   through. Tuning stdm-2 reaches at most 24 % at an audible cost ([sweep](../../bench/results/2026-10-02-stdm-2/README.md)),
   so a carrier built for model-based speech codecs (in the domain the codec keeps, such as

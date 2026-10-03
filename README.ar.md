@@ -21,7 +21,7 @@
   <img alt="Rust" src="https://img.shields.io/badge/Rust-2021-orange?logo=rust&logoColor=white">
   <img alt="WebAssembly" src="https://img.shields.io/badge/WebAssembly-no%20imports-654FF0?logo=webassembly&logoColor=white">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-  <img alt="Version 0.5.1" src="https://img.shields.io/badge/version-0.5.1-informational">
+  <img alt="Version 0.6.0" src="https://img.shields.io/badge/version-0.6.0-informational">
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
@@ -67,7 +67,7 @@
 </div>
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.5.1 vox-trust-cli
+cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.6.0 vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key

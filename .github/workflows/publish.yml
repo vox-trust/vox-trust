@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Released tag to publish, e.g. v0.5.1"
+        description: "Released tag to publish, e.g. v0.6.0"
         required: true
       registries:
         description: "Where to publish"

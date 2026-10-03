@@ -48,7 +48,9 @@ voice** with their own key, and anyone verifies the seal with ordinary cryptogra
 - Open source academic watermark ([GitHub](https://github.com/wavmark/wavmark)), 16 bits per
   second. Not in the README table (a research model, not a product), but measured: noise
   reduction, echo and a 1 % tempo change 100 %, AMR-WB 12.65 kbit/s 31 %, PESQ-WB 4.12
-  ([results](../bench/results/2026-10-02-neural-baselines/README.md)).
+  ([results](../bench/results/2026-10-02-neural-baselines/README.md)). Carrying a full 102-bit seal
+  instead of a repeated 16-bit message, it fails AMR-WB, noise reduction and noise
+  ([results](../bench/results/2026-10-03-wavmark-seal/README.md)).
 
 ## Resemble AI PerTh
 

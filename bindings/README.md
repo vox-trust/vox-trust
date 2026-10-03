@@ -43,8 +43,8 @@ cargo run --release --bin uniffi-bindgen -- generate --library target/release/li
 # Swift (macOS)
 swift/test.sh
 # Release archives
-scripts/build-android.sh v0.5.1   # needs the Android NDK and cargo-ndk
-scripts/build-apple.sh v0.5.1     # macOS with Xcode
+scripts/build-android.sh v0.6.0   # needs the Android NDK and cargo-ndk
+scripts/build-apple.sh v0.6.0     # macOS with Xcode
 ```
 
 This is a separate Cargo workspace so that the core keeps its small dependency set. UniFFI

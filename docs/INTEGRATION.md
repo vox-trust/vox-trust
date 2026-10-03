@@ -78,7 +78,7 @@ Runnable: [examples/node](../examples/node/), [examples/browser](../examples/bro
 
 ```toml
 [dependencies]
-vox-trust-core = "0.5"
+vox-trust-core = "0.6"
 ```
 
 ```rust

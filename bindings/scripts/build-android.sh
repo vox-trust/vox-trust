@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the Android libraries and the Kotlin bindings into dist/vox-trust-android-<tag>.zip.
-# Needs the Android NDK (ANDROID_NDK_HOME) and cargo-ndk. Usage: bindings/scripts/build-android.sh v0.5.1
+# Needs the Android NDK (ANDROID_NDK_HOME) and cargo-ndk. Usage: bindings/scripts/build-android.sh v0.6.0
 set -euo pipefail
 tag="$1"
 cd "$(dirname "$0")/.."

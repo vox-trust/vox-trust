@@ -4,12 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-03
+
+Build it in anywhere: Android, iOS, Python, a browser extension and an MCP server; and the WavMark lead measured and closed.
+
 ### Added
 - **Bindings for Kotlin (Android), Swift (iOS, macOS) and Python**, generated with UniFFI from `bindings/vox-trust-ffi` (its own workspace, so the core's dependencies do not change). Same interface as the JavaScript package: `seal_wav`, `verify_wav`, `decide` and key helpers. Each language runs the same round trip in CI (`.github/workflows/bindings.yml`); the Python tests also check the negative test vectors.
 - Python package `vox-trust` (`pip install vox-trust`), with wheels for Linux (x86_64, aarch64), macOS (universal) and Windows built by the Release workflow and published to PyPI by the Publish workflow (secret `PYPI_API_TOKEN`).
 - Releases attach `vox-trust-android-<version>.zip` (libraries for arm64-v8a, armeabi-v7a, x86_64 and the Kotlin bindings) and `vox-trust-apple-<version>.zip` (`VoxTrustFFI.xcframework` and the Swift bindings).
 - **Browser extension** (`extension/`) for Chrome, Edge, Firefox and Safari, one Manifest V3 code base: a verifier page (drop a WAV file, or right-click a link and *Verify with Vox Trust*), contacts added from pairing texts and kept only in the browser, the four verdicts with the changed seconds, five languages. No content scripts, nothing uploaded; reading a link asks for that one site. Tested in Chromium (`tests/extension/extension.mjs`), linted for Firefox, converted and built for Safari on macOS in CI; releases attach the three builds. Not in the stores yet.
 - **MCP server** (`mcp/`, npm `vox-trust-mcp`): lets AI assistants verify sealed recordings with `verify_audio` (a URL, base64 or a local path, optionally against a pinned public key or pairing text) and read pairing texts with `describe_pairing`. Verify-only: it refuses circle secrets and never asks for a private key. In hosted mode (`VOX_TRUST_REMOTE=1`, set by `mcp/Dockerfile`) it refuses local paths and plain http, and URLs that resolve to private addresses, checked on every connection and redirect. `glama.json` lets the Glama directory list and host it. CI builds the Docker image, checks that its WebAssembly is the reproducible build, and talks MCP to it.
+- `bench/wavmark_seal.py` and [results](bench/results/2026-10-03-wavmark-seal/README.md): WavMark carrying a full 102-bit seal. **Negative**: 0 % through AMR-WB, noise reduction and noise; no better than stdm-2 anywhere. Predictable from its published bit error rate without repetition; the run was stopped early and the partial data is published. The WavMark lead (decision 0002) is closed.
 - Integration guide: Python, Android and iOS sections. README (five languages): `pip install` and the mobile archives.
 
 ## [0.5.1] - 2026-10-02

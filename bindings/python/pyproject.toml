@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "vox-trust"
-version = "0.5.1"
+version = "0.6.0"
 description = "Seal real voices, verify them anywhere: sealed WAV files (HMAC-SHA-256 or Ed25519) with tamper localization. Pre-1.0, not audited."
 readme = "README.md"
 license = "Apache-2.0"

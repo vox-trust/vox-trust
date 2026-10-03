@@ -1,6 +1,6 @@
 {
   "name": "vox-trust-mcp",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "MCP server for the Vox Trust protocol: verify sealed voice recordings (WAV) from any AI assistant, with the seconds that changed. Verify-only, no secrets. Pre-1.0, not audited.",
   "type": "module",
   "bin": { "vox-trust-mcp": "server.js" },

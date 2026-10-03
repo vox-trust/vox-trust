@@ -19,6 +19,6 @@ name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
 [dependencies]
-vox-trust-core = { path = "../../crates/vox-trust-core", version = "0.5.1" }
+vox-trust-core = { path = "../../crates/vox-trust-core", version = "0.6.0" }
 uniffi = { version = "0.32.2", features = ["cli"] }
 thiserror = "2"

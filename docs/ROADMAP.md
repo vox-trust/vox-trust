@@ -4,9 +4,9 @@ An honest plan with the gates that decide whether to continue. No dates are prom
 
 Legend: ✅ done · 🟡 partly done · ⬜ not started
 
-## Where we are (v0.5.1)
+## Where we are (v0.6.0)
 
-**Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo, the command line or your own app (npm and crates.io packages, [integration guide](INTEGRATION.md)). It is a **pre-1.0 (specification 0.2), not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
+**Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo, the browser extension, the command line or your own app (JavaScript, Rust, Python, Android, iOS, an MCP server; [integration guide](INTEGRATION.md)). It is a **pre-1.0 (specification 0.2), not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
 
 - 🟡 **The audio watermark carrier.** An experimental carrier (stdm-1, now stdm-2) is built and measured against real codecs: it survives MP3, AAC, G.722, Opus at 24 kbit/s and above and small speed changes, but not phone-call codecs (AMR-WB), noise, noise reduction or echo, so it **did not pass the Phase 0 gate**. And because in-band seals are not bound to the audio, anyone can copy a seal into other audio (the copy attack). Until that is solved, only file mode gives verdicts. [Results](../bench/results/2026-10-01-stdm-1/README.md) · [decision](decisions/0001-carrier-phase-0.md)
 - ⬜ **Independent review, an independent implementation, and everything that depends on other people.** Only the author has looked at this code and design (plus automated adversarial reviews, which are not a substitute).
@@ -45,7 +45,7 @@ What is done:
 - ❌ **Gate not passed** (Opus 24 kbit/s 92.6 % at the default point, AMR-WB 12.65 kbit/s 0 %). As planned, file mode stays the only mode and the carrier stays experimental.
 - ✅ **stdm-2** (2026-10-02): 9.6 s windows and a detector tempo search. Opus 24 kbit/s 100 %, MP3 then Opus 98 %, 1 % tempo change 84 % (all were lower or 0); AMR-WB 12.65 kbit/s, noise, noise reduction and echo still fail ([results](../bench/results/2026-10-02-stdm-2/README.md))
 - ✅ Published neural watermarks (AudioSeal, WavMark) measured on the same harness as a yardstick: WavMark survives noise reduction, echo, tempo and partly AMR-WB, where stdm-2 fails ([results](../bench/results/2026-10-02-neural-baselines/README.md))
-- ⬜ WavMark (or a similar network) carrying a full 102-bit seal, on every condition
+- ✅ WavMark carrying a full 102-bit seal: measured 2026-10-03, negative (fails AMR-WB, noise reduction and noise without the repetition it relies on); [results](../bench/results/2026-10-03-wavmark-seal/README.md)
 - ❌ **Content binding by a robust fingerprint** (2026-10-02): stops a naive copy, defeated by an adaptive attacker, also with a fingerprint secret to the circle ([study](../bench/results/2026-10-02-content-binding/README.md)). The copy attack stays open.
 - ⬜ Still to measure: packet loss, AGC, reverb, speaker-to-microphone replay, neural-codec resynthesis, real app paths, fairness across speakers, a larger and noisier corpus, a listening test
 - ⬜ A carrier designed for model-based speech codecs (AMR-WB, low-rate Opus)
@@ -91,7 +91,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 ## Phase 3: public release
 
-- 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0** (the carrier did not pass its gate); **v0.4.0** adds protected keys, the versioning rules and mutation-tested core code; **v0.5.0** the stdm-2 carrier, a benchmark against published neural watermarks and a comparison with other approaches. **v0.5.1** packages for developers (npm, crates.io) and an integration guide. A 1.0 waits for an outside review.
+- 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0** (the carrier did not pass its gate); **v0.4.0** adds protected keys, the versioning rules and mutation-tested core code; **v0.5.0** the stdm-2 carrier, a benchmark against published neural watermarks and a comparison with other approaches. **v0.5.1** packages for developers (npm, crates.io) and an integration guide. **v0.6.0** bindings for Android, iOS and Python, a browser extension, an MCP server, and WavMark measured with a full seal. A 1.0 waits for an outside review.
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
 - 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
 - ⬜ Private vulnerability reporting enabled in the repository settings and tested end to end (SECURITY.md already points to it, with a fallback)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds VoxTrustFFI.xcframework (iOS, iOS simulator, macOS) and the Swift bindings into
-# dist/vox-trust-apple-<tag>.zip. Runs on macOS with Xcode. Usage: bindings/scripts/build-apple.sh v0.5.1
+# dist/vox-trust-apple-<tag>.zip. Runs on macOS with Xcode. Usage: bindings/scripts/build-apple.sh v0.6.0
 set -euo pipefail
 tag="$1"
 cd "$(dirname "$0")/.."

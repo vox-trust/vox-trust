@@ -1,0 +1,89 @@
+{
+  "recordings": 8,
+  "pesq_wb_mean": 4.1933780908584595,
+  "pesq_wb_min": 4.030545711517334,
+  "stoi_mean": 0.9962483160653199,
+  "skipped_segments": 3,
+  "seals_embedded": 11,
+  "conditions": {
+    "amr-wb-12.65k": {
+      "seals": 5,
+      "exact": 0.0,
+      "wrong": 0,
+      "segments": 0.05
+    },
+    "amr-wb-23.85k": {
+      "seals": 5,
+      "exact": 0.0,
+      "wrong": 0,
+      "segments": 0.6
+    },
+    "denoise": {
+      "seals": 5,
+      "exact": 0.0,
+      "wrong": 0,
+      "segments": 0.65
+    },
+    "echo": {
+      "seals": 5,
+      "exact": 0.0,
+      "wrong": 2,
+      "segments": 0.675
+    },
+    "g722": {
+      "seals": 5,
+      "exact": 0.6,
+      "wrong": 0,
+      "segments": 0.925
+    },
+    "mp3-64k": {
+      "seals": 10,
+      "exact": 0.8,
+      "wrong": 0,
+      "segments": 0.9625
+    },
+    "noise-20db": {
+      "seals": 10,
+      "exact": 0.0,
+      "wrong": 0,
+      "segments": 0.0
+    },
+    "noise-30db": {
+      "seals": 10,
+      "exact": 0.0,
+      "wrong": 0,
+      "segments": 0.275
+    },
+    "opus-12k": {
+      "seals": 7,
+      "exact": 0.0,
+      "wrong": 0,
+      "segments": 0.08928571428571429
+    },
+    "opus-24k": {
+      "seals": 7,
+      "exact": 0.42857142857142855,
+      "wrong": 0,
+      "segments": 0.875
+    },
+    "original": {
+      "seals": 11,
+      "exact": 0.8181818181818182,
+      "wrong": 0,
+      "segments": 0.9659090909090909
+    },
+    "tempo+1%": {
+      "seals": 5,
+      "exact": 0.6,
+      "wrong": 0,
+      "segments": 0.925
+    },
+    "trim-1.234s": {
+      "seals": 3,
+      "exact": 0.6666666666666666,
+      "wrong": 0,
+      "segments": 1.0
+    }
+  },
+  "unmarked": {}
+}
