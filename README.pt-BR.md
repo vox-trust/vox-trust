@@ -61,7 +61,7 @@ Dois modos: **círculo** (pessoas que se conhecem, segredo compartilhado) e **p�
 **Na linha de comando** (binários prontos para Linux, macOS e Windows, com checksums e atestados de build, estão na [página de releases](https://github.com/vox-trust/vox-trust/releases/latest); ou compile do código-fonte):
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.6.0 vox-trust-cli
+cargo install vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key

@@ -69,7 +69,7 @@
 </div>
 
 ```sh
-cargo install --locked --git https://github.com/vox-trust/vox-trust --tag v0.6.0 vox-trust-cli
+cargo install vox-trust-cli
 
 vox-trust keygen me.key                                  # asks for a passphrase
 vox-trust seal speech.wav sealed.wav --mode circle --key me.key
