@@ -32,7 +32,7 @@ Un protocolo abierto, con una implementación de referencia en Rust, que sella u
   <a href="docs/ROADMAP.md">Hoja de ruta</a>
 </p>
 
-> **Estado: v0.5, el modo archivo funciona. Sin auditar.** Puedes sellar un archivo WAV, verificarlo y ver exactamente qué segundos fueron alterados, en la [demo en el navegador](https://vox-trust.github.io/demo/?lang=es) o con la línea de comandos. Los archivos sellados sobreviven **solo a copias idénticas bit a bit**. Una marca de agua de audio **experimental**, que sobrevive a MP3, AAC, Opus y pequeños cambios de velocidad, está construida y [medida](bench/results/2026-10-02-stdm-2/README.md). Pero falla con códecs de llamadas telefónicas y con ruido, y los sellos dentro del audio pueden copiarse a otro audio, así que **todavía no da veredictos**. No uses esto para proteger a nadie hasta que haya sido revisado.
+> **Estado: v0.6, el modo archivo funciona. Sin auditar.** Puedes sellar un archivo WAV, verificarlo y ver exactamente qué segundos fueron alterados, en la [demo en el navegador](https://vox-trust.github.io/demo/?lang=es) o con la línea de comandos. Los archivos sellados sobreviven **solo a copias idénticas bit a bit**. Una marca de agua de audio **experimental**, que sobrevive a MP3, AAC, Opus y pequeños cambios de velocidad, está construida y [medida](bench/results/2026-10-02-stdm-2/README.md). Pero falla con códecs de llamadas telefónicas y con ruido, y los sellos dentro del audio pueden copiarse a otro audio, así que **todavía no da veredictos**. No uses esto para proteger a nadie hasta que haya sido revisado.
 
 ## El problema
 
