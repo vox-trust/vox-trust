@@ -94,6 +94,7 @@ Vox Trust 是一个开放协议，设计为嵌入人们已在使用的应用：�
 ```sh
 npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
 cargo add vox-trust-core     # Rust, no unsafe, no I/O
+pip install vox-trust        # Python 3.9+
 ```
 
 ```js
@@ -104,7 +105,7 @@ const report = vt.verify(sealed, { pinnedPublicKey });
 vt.decide(report.check, { alwaysSeals: true, strict: false }); // "verified" | "unsealed" | "warning" | "alert"
 ```
 
-[集成指南](docs/INTEGRATION.md)（英文）约需 10 分钟：密钥、配对、四种判定及各自应如何显示，并附可运行的 Node、浏览器（麦克风）和 Rust [示例](examples/)。Apache-2.0，无需调用任何服务，无需账号。
+[集成指南](docs/INTEGRATION.md)（英文）约需 10 分钟：密钥、配对、四种判定及各自应如何显示，并附可运行的 Node、浏览器（麦克风）和 Rust [示例](examples/)。Android（Kotlin）与 iOS（Swift）库随每个 [release](https://github.com/vox-trust/vox-trust/releases) 附带（[bindings](bindings/)）。Apache-2.0，无需调用任何服务，无需账号。
 
 ## 它不是什么
 
@@ -171,7 +172,9 @@ crates/
   vox-trust-wasm/   作为 WebAssembly 模块的核心（纯 C 接口，无 imports）
   vox-trust-cli/    命令行工具 `vox-trust`
 web/         浏览器演示（发布于 vox-trust.github.io/demo/）
+bindings/    Kotlin（Android）、Swift（iOS、macOS）与 Python 绑定（UniFFI）
 npm/         npm 包 `vox-trust`（WebAssembly + JavaScript 封装 + 类型）
+extension/   适用于 Chrome、Edge、Firefox 和 Safari 的浏览器扩展
 examples/    集成示例：Node、浏览器、Rust
 tests/       Node（WebAssembly）与浏览器测试
 tools/       独立的向量校验

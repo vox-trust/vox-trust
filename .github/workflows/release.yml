@@ -104,9 +104,93 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  python:
+    name: Python wheels (${{ matrix.name }})
+    needs: check
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { name: linux-x86_64, os: ubuntu-latest, target: x86_64, manylinux: "2_28" }
+          - { name: linux-aarch64, os: ubuntu-latest, target: aarch64, manylinux: "2_28" }
+          - { name: macos-universal, os: macos-latest, target: universal2-apple-darwin, manylinux: "" }
+          - { name: windows-x86_64, os: windows-latest, target: x64, manylinux: "" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          working-directory: bindings/python
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux || 'auto' }}
+          args: --release --locked --out ../../dist
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: python-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    name: Android libraries and Kotlin bindings
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Build
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          cargo install --locked cargo-ndk
+          bindings/scripts/build-android.sh "$TAG"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android
+          path: dist/*
+          if-no-files-found: error
+
+  apple:
+    name: iOS and macOS framework and Swift bindings
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Build
+        run: bindings/scripts/build-apple.sh "$TAG"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apple
+          path: dist/*
+          if-no-files-found: error
+
+  extension:
+    name: Browser extension
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Build
+        run: |
+          scripts/build-web.sh
+          node extension/build.mjs
+          mkdir -p dist && cp extension/dist/*.zip dist/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: extension
+          path: dist/*
+          if-no-files-found: error
+
   release:
     name: Publish the release
-    needs: [cli, wasm]
+    needs: [cli, wasm, python, android, apple, extension]
     runs-on: ubuntu-latest
     permissions:
       contents: write

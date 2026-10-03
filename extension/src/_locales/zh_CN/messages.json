@@ -1,0 +1,147 @@
+{
+  "extName": {
+    "message": "Vox Trust"
+  },
+  "extDescription": {
+    "message": "离线验证已加封的语音录音，并查看哪些秒被改动。开放协议，尚未经过安全审计。"
+  },
+  "popupNote": {
+    "message": "一切都在你的浏览器中运行，不上传任何内容。"
+  },
+  "popupOpen": {
+    "message": "验证文件"
+  },
+  "popupContacts": {
+    "message": "联系人"
+  },
+  "status": {
+    "message": "1.0 之前的版本，尚未审计。"
+  },
+  "menuVerify": {
+    "message": "用 Vox Trust 验证"
+  },
+  "pageTitle": {
+    "message": "验证录音"
+  },
+  "dropHint": {
+    "message": "将 WAV 文件拖到这里，或选择一个文件"
+  },
+  "sender": {
+    "message": "谁声称发送了它？"
+  },
+  "senderAuto": {
+    "message": "根据封印识别"
+  },
+  "fetching": {
+    "message": "正在下载文件…"
+  },
+  "needAccess": {
+    "message": "要读取此文件，Vox Trust 需要访问 $ARG$。它只请求该网站的权限。",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "allowAccess": {
+    "message": "允许访问"
+  },
+  "fetchFailed": {
+    "message": "无法在此下载文件。请先下载，再拖到上方。"
+  },
+  "v_verified_title": {
+    "message": "已验证"
+  },
+  "v_verified_text": {
+    "message": "用你为 $ARG$ 固定的密钥加封，且此后未被改动。",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_unsealed_title": {
+    "message": "无封印"
+  },
+  "v_unsealed_text": {
+    "message": "没有可供你验证的封印。大多数音频都是如此，并不代表它是伪造的。"
+  },
+  "v_warning_title": {
+    "message": "注意"
+  },
+  "v_warning_text": {
+    "message": "$ARG$ 总会加封，但这段录音没有来自对方的有效封印。",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_alert_title": {
+    "message": "警报"
+  },
+  "v_alert_text": {
+    "message": "封印已损坏，或来自与你固定的不同的密钥。不要相信这段录音。"
+  },
+  "changedSeconds": {
+    "message": "已改动：$ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownKeyIntact": {
+    "message": "由你未固定的密钥加封，且加封后未被改动。这不能说明是谁加封的。"
+  },
+  "unknownKeyAltered": {
+    "message": "由你未固定的密钥加封，且在加封后被改动。"
+  },
+  "notWav": {
+    "message": "这不是 16 位 PCM WAV 文件。被应用重新编码的语音消息会丢失封印。"
+  },
+  "details": {
+    "message": "详情"
+  },
+  "contactsTitle": {
+    "message": "联系人"
+  },
+  "noContacts": {
+    "message": "还没有联系人。请向每位联系人索取配对文本。"
+  },
+  "pairingLabel": {
+    "message": "配对文本"
+  },
+  "nameLabel": {
+    "message": "名称"
+  },
+  "alwaysSeals": {
+    "message": "总会加封"
+  },
+  "strict": {
+    "message": "严格：缺少封印即为警报"
+  },
+  "addContact": {
+    "message": "添加联系人"
+  },
+  "remove": {
+    "message": "移除"
+  },
+  "invalidPairing": {
+    "message": "这不是有效的配对文本。"
+  },
+  "circleWarning": {
+    "message": "圈子配对文本包含共享密钥，只保存在此浏览器中。"
+  },
+  "keyId": {
+    "message": "密钥 $ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "learnMore": {
+    "message": "工作原理"
+  }
+}

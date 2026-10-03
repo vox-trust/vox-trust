@@ -1,0 +1,147 @@
+{
+  "extName": {
+    "message": "Vox Trust"
+  },
+  "extDescription": {
+    "message": "Verify sealed voice recordings offline, and see which seconds were changed. Open protocol, not audited."
+  },
+  "popupNote": {
+    "message": "Everything runs in your browser. Nothing is uploaded."
+  },
+  "popupOpen": {
+    "message": "Verify a file"
+  },
+  "popupContacts": {
+    "message": "Contacts"
+  },
+  "status": {
+    "message": "Pre-1.0, not audited."
+  },
+  "menuVerify": {
+    "message": "Verify with Vox Trust"
+  },
+  "pageTitle": {
+    "message": "Verify a recording"
+  },
+  "dropHint": {
+    "message": "Drop a WAV file here, or choose one"
+  },
+  "sender": {
+    "message": "Who claims to have sent it?"
+  },
+  "senderAuto": {
+    "message": "Identify from the seal"
+  },
+  "fetching": {
+    "message": "Downloading the file…"
+  },
+  "needAccess": {
+    "message": "To read this file, Vox Trust needs access to $ARG$. It asks only for that site.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "allowAccess": {
+    "message": "Allow access"
+  },
+  "fetchFailed": {
+    "message": "Could not download the file here. Download it and drop it above."
+  },
+  "v_verified_title": {
+    "message": "Verified"
+  },
+  "v_verified_text": {
+    "message": "Sealed with the key you pinned for $ARG$, and unchanged since.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_unsealed_title": {
+    "message": "No seal"
+  },
+  "v_unsealed_text": {
+    "message": "No seal you can check. That is normal for most audio and does not mean it is fake."
+  },
+  "v_warning_title": {
+    "message": "Warning"
+  },
+  "v_warning_text": {
+    "message": "$ARG$ always seals, but this recording has no valid seal from them.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_alert_title": {
+    "message": "Alert"
+  },
+  "v_alert_text": {
+    "message": "The seal is broken, or comes from a different key than the one you pinned. Do not trust this recording."
+  },
+  "changedSeconds": {
+    "message": "Changed: $ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownKeyIntact": {
+    "message": "Sealed by a key you have not pinned, and unchanged since it was sealed. That says nothing about who sealed it."
+  },
+  "unknownKeyAltered": {
+    "message": "Sealed by a key you have not pinned, and altered after it was sealed."
+  },
+  "notWav": {
+    "message": "This is not a 16-bit PCM WAV file. Voice messages that apps re-encode lose the seal."
+  },
+  "details": {
+    "message": "Details"
+  },
+  "contactsTitle": {
+    "message": "Contacts"
+  },
+  "noContacts": {
+    "message": "No contacts yet. Ask each contact for their pairing text."
+  },
+  "pairingLabel": {
+    "message": "Pairing text"
+  },
+  "nameLabel": {
+    "message": "Name"
+  },
+  "alwaysSeals": {
+    "message": "Always seals"
+  },
+  "strict": {
+    "message": "Strict: a missing seal is an alert"
+  },
+  "addContact": {
+    "message": "Add contact"
+  },
+  "remove": {
+    "message": "Remove"
+  },
+  "invalidPairing": {
+    "message": "That is not a valid pairing text."
+  },
+  "circleWarning": {
+    "message": "A circle pairing text contains a shared secret. It is stored only in this browser."
+  },
+  "keyId": {
+    "message": "Key $ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "learnMore": {
+    "message": "How it works"
+  }
+}

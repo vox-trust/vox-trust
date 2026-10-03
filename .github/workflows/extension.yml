@@ -1,0 +1,63 @@
+name: Extension
+
+on:
+  push:
+    branches: [main]
+    paths: ["extension/**", "web/vox-trust.js", "crates/vox-trust-core/**", "crates/vox-trust-wasm/**", "tests/extension/**", ".github/workflows/extension.yml"]
+  pull_request:
+    paths: ["extension/**", "web/vox-trust.js", "crates/vox-trust-core/**", "crates/vox-trust-wasm/**", "tests/extension/**", ".github/workflows/extension.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-and-firefox:
+    name: Chromium test and Firefox lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Build
+        run: |
+          scripts/build-web.sh
+          node extension/build.mjs
+      - name: Lint the Firefox build
+        run: npx --yes web-ext@8 lint --self-hosted -s extension/dist/firefox
+      - name: Drive the extension in Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node tests/extension/extension.mjs
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: extension
+          path: extension/dist/*.zip
+          if-no-files-found: error
+
+  safari:
+    name: Safari (convert and build, unsigned)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Build the extension
+        run: |
+          scripts/build-web.sh
+          node extension/build.mjs
+      - name: Convert and build for macOS
+        run: |
+          xcrun safari-web-extension-converter extension/dist/safari --project-location build/safari \
+            --app-name "Vox Trust" --bundle-identifier io.github.voxtrust.safari --macos-only --no-open --no-prompt --force
+          project=$(find build/safari -name "*.xcodeproj" -maxdepth 3 | head -n 1)
+          echo "project: $project"
+          xcodebuild -project "$project" -scheme "Vox Trust" -configuration Release \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" build | tail -n 20

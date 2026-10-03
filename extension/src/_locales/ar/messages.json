@@ -1,0 +1,147 @@
+{
+  "extName": {
+    "message": "Vox Trust"
+  },
+  "extDescription": {
+    "message": "تحقّق من تسجيلات الصوت المختومة دون اتصال، واعرف أي الثواني تغيّرت. بروتوكول مفتوح، دون تدقيق أمني."
+  },
+  "popupNote": {
+    "message": "كل شيء يعمل في متصفحك. لا يُرفع أي شيء."
+  },
+  "popupOpen": {
+    "message": "تحقّق من ملف"
+  },
+  "popupContacts": {
+    "message": "جهات الاتصال"
+  },
+  "status": {
+    "message": "إصدار ما قبل 1.0، دون تدقيق."
+  },
+  "menuVerify": {
+    "message": "تحقّق باستخدام Vox Trust"
+  },
+  "pageTitle": {
+    "message": "تحقّق من تسجيل"
+  },
+  "dropHint": {
+    "message": "أفلت ملف WAV هنا أو اختر ملفًا"
+  },
+  "sender": {
+    "message": "من يدّعي أنه أرسله؟"
+  },
+  "senderAuto": {
+    "message": "التعرّف من الختم"
+  },
+  "fetching": {
+    "message": "جارٍ تنزيل الملف…"
+  },
+  "needAccess": {
+    "message": "لقراءة هذا الملف يحتاج Vox Trust إلى الوصول إلى $ARG$. يطلب الإذن لهذا الموقع فقط.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "allowAccess": {
+    "message": "السماح بالوصول"
+  },
+  "fetchFailed": {
+    "message": "تعذّر تنزيل الملف هنا. نزّله ثم أفلته أعلاه."
+  },
+  "v_verified_title": {
+    "message": "موثّق"
+  },
+  "v_verified_text": {
+    "message": "مختوم بالمفتاح الذي ثبّتّه لـ $ARG$، ولم يتغيّر منذ ذلك.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_unsealed_title": {
+    "message": "بلا ختم"
+  },
+  "v_unsealed_text": {
+    "message": "لا يوجد ختم يمكنك التحقق منه. هذا طبيعي لمعظم التسجيلات ولا يعني أنه مزيّف."
+  },
+  "v_warning_title": {
+    "message": "تحذير"
+  },
+  "v_warning_text": {
+    "message": "$ARG$ يختم دائمًا، لكن هذا التسجيل لا يحمل ختمًا صالحًا منه.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_alert_title": {
+    "message": "إنذار"
+  },
+  "v_alert_text": {
+    "message": "الختم مكسور أو صادر عن مفتاح غير الذي ثبّتّه. لا تثق بهذا التسجيل."
+  },
+  "changedSeconds": {
+    "message": "تغيّر: $ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownKeyIntact": {
+    "message": "مختوم بمفتاح لم تثبّته، ولم يتغيّر منذ ختمه. وهذا لا يدل على من ختمه."
+  },
+  "unknownKeyAltered": {
+    "message": "مختوم بمفتاح لم تثبّته، وعُدّل بعد ختمه."
+  },
+  "notWav": {
+    "message": "هذا ليس ملف WAV PCM بدقة 16 بت. الرسائل الصوتية التي تعيد التطبيقات ترميزها تفقد الختم."
+  },
+  "details": {
+    "message": "التفاصيل"
+  },
+  "contactsTitle": {
+    "message": "جهات الاتصال"
+  },
+  "noContacts": {
+    "message": "لا توجد جهات اتصال بعد. اطلب من كل جهة نص الاقتران الخاص بها."
+  },
+  "pairingLabel": {
+    "message": "نص الاقتران"
+  },
+  "nameLabel": {
+    "message": "الاسم"
+  },
+  "alwaysSeals": {
+    "message": "يختم دائمًا"
+  },
+  "strict": {
+    "message": "صارم: غياب الختم إنذار"
+  },
+  "addContact": {
+    "message": "إضافة جهة اتصال"
+  },
+  "remove": {
+    "message": "إزالة"
+  },
+  "invalidPairing": {
+    "message": "هذا ليس نص اقتران صالحًا."
+  },
+  "circleWarning": {
+    "message": "نص اقتران الدائرة يحتوي على سرّ مشترك، ويُحفظ في هذا المتصفح فقط."
+  },
+  "keyId": {
+    "message": "المفتاح $ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "learnMore": {
+    "message": "كيف يعمل"
+  }
+}

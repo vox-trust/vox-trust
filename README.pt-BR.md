@@ -94,6 +94,7 @@ Vox Trust é um protocolo aberto feito para viver dentro dos apps que as pessoas
 ```sh
 npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
 cargo add vox-trust-core     # Rust, no unsafe, no I/O
+pip install vox-trust        # Python 3.9+
 ```
 
 ```js
@@ -104,7 +105,7 @@ const report = vt.verify(sealed, { pinnedPublicKey });
 vt.decide(report.check, { alwaysSeals: true, strict: false }); // "verified" | "unsealed" | "warning" | "alert"
 ```
 
-O [guia de integração](docs/INTEGRATION.md) leva uns 10 minutos (em inglês): chaves, pareamento, os quatro vereditos e o que mostrar em cada um, com [exemplos](examples/) executáveis para Node, navegador (microfone) e Rust. Apache-2.0, sem serviço para chamar, sem conta.
+O [guia de integração](docs/INTEGRATION.md) leva uns 10 minutos (em inglês): chaves, pareamento, os quatro vereditos e o que mostrar em cada um, com [exemplos](examples/) executáveis para Node, navegador (microfone) e Rust. Bibliotecas para Android (Kotlin) e iOS (Swift) vão anexadas a cada [release](https://github.com/vox-trust/vox-trust/releases) ([bindings](bindings/)). Apache-2.0, sem serviço para chamar, sem conta.
 
 ## O que isto NÃO é
 
@@ -171,7 +172,9 @@ crates/
   vox-trust-wasm/   o núcleo como módulo WebAssembly (interface C simples, sem imports)
   vox-trust-cli/    a ferramenta de linha de comando `vox-trust`
 web/         a demo no navegador (publicada em vox-trust.github.io/demo/)
+bindings/    bindings para Kotlin (Android), Swift (iOS, macOS) e Python (UniFFI)
 npm/         o pacote npm `vox-trust` (WebAssembly + wrapper JavaScript + tipos)
+extension/   extensão de navegador para Chrome, Edge, Firefox e Safari
 examples/    exemplos de integração: Node, navegador, Rust
 tests/       testes Node (WebAssembly) e de navegador
 tools/       verificação independente dos vetores

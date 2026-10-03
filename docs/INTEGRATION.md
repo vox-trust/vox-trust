@@ -94,8 +94,43 @@ let verdict = decide(report.check, Some(ContactState { always_seals: true, stric
 ```
 
 Runnable: `cargo run -p vox-trust-core --example seal_and_verify`. The crate forbids `unsafe`
-and has no I/O; the clock and the randomness come from you. Mobile apps can call it through
-their usual Rust bridge (UniFFI, `cargo-ndk`, a C ABI) or embed the WebAssembly core.
+and has no I/O; the clock and the randomness come from you.
+
+## Python
+
+```sh
+pip install vox-trust
+```
+
+```python
+import vox_trust as vt
+sealed = vt.seal_wav(wav, vt.SealMode.PUBLIC, seed, 0, int(time.time()), 0, 16000)
+report = vt.verify_wav(sealed, vt.Trust(pinned_public_key=public_key))
+vt.decide(report.check, vt.Contact(always_seals=True, strict=False))  # Verdict.VERIFIED
+```
+
+## Android (Kotlin) and iOS (Swift)
+
+Each release attaches `vox-trust-android-<version>.zip` (libraries for arm64-v8a,
+armeabi-v7a and x86_64, plus the Kotlin bindings) and `vox-trust-apple-<version>.zip`
+(`VoxTrustFFI.xcframework` for iOS, the simulator and macOS, plus the Swift bindings). The
+README inside each archive says where the files go.
+
+```kotlin
+import io.github.voxtrust.*
+val sealed = sealWav(wav, SealMode.PUBLIC, seed, 0u, nowUnix, 0u, 16000u)
+val verdict = decide(verifyWav(sealed, Trust(pinnedPublicKey = pk)).check, Contact(alwaysSeals = true, strict = false))
+```
+
+```swift
+let sealed = try sealWav(wav: wav, mode: .public, key: seed, keyId: 0, createdUnix: now, counter: 0, chunkFrames: 16000)
+let verdict = decide(check: try verifyWav(wav: sealed, trust: Trust(pinnedPublicKey: pk)).check,
+                     contact: Contact(alwaysSeals: true, strict: false))
+```
+
+Keep the seed in the Android Keystore or the iOS Keychain. The bindings are generated with
+UniFFI from one Rust crate ([bindings/](../bindings/)); Maven Central and Swift Package
+Manager distribution are not set up yet.
 
 ## Command line and servers
 

@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vox Trust</title>
+  <link rel="icon" href="icons/icon-32.png">
+  <link rel="stylesheet" href="verify.css">
+  <script type="module" src="verify.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1><img src="icons/icon-48.png" alt="" width="28" height="28"> <span data-i18n="pageTitle"></span></h1>
+      <p class="note"><span data-i18n="popupNote"></span> <span data-i18n="status"></span></p>
+    </header>
+
+    <section aria-labelledby="file-h">
+      <h2 id="file-h" class="sr-only" data-i18n="pageTitle"></h2>
+      <label class="drop" id="drop">
+        <span data-i18n="dropHint"></span>
+        <input type="file" id="file" accept=".wav,audio/wav,audio/x-wav">
+      </label>
+      <div id="fetchBox" hidden>
+        <p id="fetchText"></p>
+        <button type="button" id="allow" class="primary" data-i18n="allowAccess" hidden></button>
+      </div>
+      <p>
+        <label for="sender" data-i18n="sender"></label>
+        <select id="sender"></select>
+      </p>
+      <div id="verdict" class="verdict neutral" role="status" aria-live="polite" hidden>
+        <strong id="vTitle"></strong>
+        <p id="vText"></p>
+        <p id="vChunks"></p>
+        <details>
+          <summary data-i18n="details"></summary>
+          <pre id="report" dir="ltr"></pre>
+        </details>
+      </div>
+    </section>
+
+    <section aria-labelledby="contacts">
+      <h2 id="contacts" data-i18n="contactsTitle"></h2>
+      <ul id="contactList"></ul>
+      <p id="noContacts" class="note" data-i18n="noContacts"></p>
+      <form id="addForm">
+        <label><span data-i18n="pairingLabel"></span>
+          <input id="pairing" required autocomplete="off" spellcheck="false" dir="ltr" placeholder="voxtrust:0:public:…"></label>
+        <label><span data-i18n="nameLabel"></span> <input id="name" autocomplete="off"></label>
+        <label class="check"><input type="checkbox" id="always"> <span data-i18n="alwaysSeals"></span></label>
+        <label class="check"><input type="checkbox" id="strict"> <span data-i18n="strict"></span></label>
+        <button type="submit" class="primary" data-i18n="addContact"></button>
+        <p id="formMsg" class="note" role="alert"></p>
+      </form>
+    </section>
+
+    <footer class="note"><a href="https://github.com/vox-trust/vox-trust" target="_blank" rel="noopener" data-i18n="learnMore"></a></footer>
+  </main>
+</body>
+</html>

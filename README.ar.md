@@ -114,6 +114,7 @@ Vox Trust بروتوكول مفتوح صُمّم ليعمل داخل التطب�
 ```sh
 npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
 cargo add vox-trust-core     # Rust, no unsafe, no I/O
+pip install vox-trust        # Python 3.9+
 ```
 
 ```js
@@ -126,7 +127,7 @@ vt.decide(report.check, { alwaysSeals: true, strict: false }); // "verified" | "
 
 <div dir="rtl">
 
-يستغرق [دليل الدمج](docs/INTEGRATION.md) (بالإنجليزية) نحو 10 دقائق: المفاتيح والاقتران والأحكام الأربعة وما يُعرض لكل منها، مع [أمثلة](examples/) قابلة للتشغيل لـ Node والمتصفح (الميكروفون) وRust. الترخيص Apache-2.0، بلا خدمة خارجية وبلا حساب.
+يستغرق [دليل الدمج](docs/INTEGRATION.md) (بالإنجليزية) نحو 10 دقائق: المفاتيح والاقتران والأحكام الأربعة وما يُعرض لكل منها، مع [أمثلة](examples/) قابلة للتشغيل لـ Node والمتصفح (الميكروفون) وRust. تُرفق مكتبات Android (Kotlin) وiOS (Swift) بكل [إصدار](https://github.com/vox-trust/vox-trust/releases) ([bindings](bindings/)). الترخيص Apache-2.0، بلا خدمة خارجية وبلا حساب.
 
 ## ما الذي لا يمثّله هذا
 
@@ -195,7 +196,9 @@ crates/
   vox-trust-wasm/   النواة كوحدة WebAssembly (واجهة C بسيطة، بلا imports)
   vox-trust-cli/    أداة سطر الأوامر `vox-trust`
 web/         العرض التجريبي في المتصفح (منشور على vox-trust.github.io/demo/)
+bindings/    روابط Kotlin (Android) وSwift (iOS وmacOS) وPython (UniFFI)
 npm/         حزمة npm `vox-trust` (WebAssembly + غلاف JavaScript + الأنواع)
+extension/   إضافة متصفح لـ Chrome وEdge وFirefox وSafari
 examples/    أمثلة الدمج: Node والمتصفح وRust
 tests/       اختبارات Node (WebAssembly) واختبارات المتصفح
 tools/       التحقق المستقل من المتجهات

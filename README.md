@@ -92,6 +92,7 @@ Vox Trust is an open protocol meant to live inside the apps people already use: 
 ```sh
 npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
 cargo add vox-trust-core     # Rust, no unsafe, no I/O
+pip install vox-trust        # Python 3.9+
 ```
 
 ```js
@@ -102,7 +103,7 @@ const report = vt.verify(sealed, { pinnedPublicKey });
 vt.decide(report.check, { alwaysSeals: true, strict: false }); // "verified" | "unsealed" | "warning" | "alert"
 ```
 
-The [integration guide](docs/INTEGRATION.md) takes about 10 minutes: keys, pairing, the four verdicts and what to show for each, with runnable [examples](examples/) for Node, the browser (microphone) and Rust. Apache-2.0, no service to call, no account.
+The [integration guide](docs/INTEGRATION.md) takes about 10 minutes: keys, pairing, the four verdicts and what to show for each, with runnable [examples](examples/) for Node, the browser (microphone) and Rust. Android (Kotlin) and iOS (Swift) libraries are attached to every [release](https://github.com/vox-trust/vox-trust/releases) ([bindings](bindings/)). Apache-2.0, no service to call, no account.
 
 ## What this is NOT
 
@@ -187,7 +188,9 @@ crates/
   vox-trust-carrier/  experimental in-band carrier (research only)
   vox-trust-bench/  `vt-bench`, the carrier benchmark
 web/         the browser demo (published at vox-trust.github.io/demo/)
+bindings/    Kotlin (Android), Swift (iOS, macOS) and Python bindings (UniFFI)
 npm/         the `vox-trust` npm package (WebAssembly + JavaScript wrapper + types)
+extension/   browser extension for Chrome, Edge, Firefox and Safari
 examples/    integration examples: Node, browser, Rust
 tests/       Node (WebAssembly) and browser tests
 tools/       independent vector check

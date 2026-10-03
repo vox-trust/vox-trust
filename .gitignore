@@ -19,3 +19,4 @@ __pycache__/
 /bindings/kotlin/build
 /bindings/kotlin/.gradle
 /bindings/kotlin/.kotlin
+/extension/dist

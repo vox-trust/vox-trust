@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- **Bindings for Kotlin (Android), Swift (iOS, macOS) and Python**, generated with UniFFI from `bindings/vox-trust-ffi` (its own workspace, so the core's dependencies do not change). Same interface as the JavaScript package: `seal_wav`, `verify_wav`, `decide` and key helpers. Each language runs the same round trip in CI (`.github/workflows/bindings.yml`); the Python tests also check the negative test vectors.
+- Python package `vox-trust` (`pip install vox-trust`), with wheels for Linux (x86_64, aarch64), macOS (universal) and Windows built by the Release workflow and published to PyPI by the Publish workflow (secret `PYPI_API_TOKEN`).
+- Releases attach `vox-trust-android-<version>.zip` (libraries for arm64-v8a, armeabi-v7a, x86_64 and the Kotlin bindings) and `vox-trust-apple-<version>.zip` (`VoxTrustFFI.xcframework` and the Swift bindings).
+- **Browser extension** (`extension/`) for Chrome, Edge, Firefox and Safari, one Manifest V3 code base: a verifier page (drop a WAV file, or right-click a link and *Verify with Vox Trust*), contacts added from pairing texts and kept only in the browser, the four verdicts with the changed seconds, five languages. No content scripts, nothing uploaded; reading a link asks for that one site. Tested in Chromium (`tests/extension/extension.mjs`), linted for Firefox, converted and built for Safari on macOS in CI; releases attach the three builds. Not in the stores yet.
+- Integration guide: Python, Android and iOS sections. README (five languages): `pip install` and the mobile archives.
+
 ## [0.5.1] - 2026-10-02
 
 Packages for developers: Vox Trust is meant to be built into other apps.

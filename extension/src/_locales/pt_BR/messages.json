@@ -1,0 +1,147 @@
+{
+  "extName": {
+    "message": "Vox Trust"
+  },
+  "extDescription": {
+    "message": "Verifique gravações de voz seladas, offline, e veja quais segundos foram alterados. Protocolo aberto, sem auditoria."
+  },
+  "popupNote": {
+    "message": "Tudo roda no seu navegador. Nada é enviado."
+  },
+  "popupOpen": {
+    "message": "Verificar um arquivo"
+  },
+  "popupContacts": {
+    "message": "Contatos"
+  },
+  "status": {
+    "message": "Versão pré-1.0, sem auditoria."
+  },
+  "menuVerify": {
+    "message": "Verificar com Vox Trust"
+  },
+  "pageTitle": {
+    "message": "Verificar uma gravação"
+  },
+  "dropHint": {
+    "message": "Solte um arquivo WAV aqui ou escolha um"
+  },
+  "sender": {
+    "message": "Quem diz ter enviado?"
+  },
+  "senderAuto": {
+    "message": "Identificar pelo selo"
+  },
+  "fetching": {
+    "message": "Baixando o arquivo…"
+  },
+  "needAccess": {
+    "message": "Para ler este arquivo, o Vox Trust precisa de acesso a $ARG$. Ele pede acesso só a esse site.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "allowAccess": {
+    "message": "Permitir acesso"
+  },
+  "fetchFailed": {
+    "message": "Não foi possível baixar o arquivo aqui. Baixe-o e solte acima."
+  },
+  "v_verified_title": {
+    "message": "Verificado"
+  },
+  "v_verified_text": {
+    "message": "Selado com a chave que você fixou para $ARG$, e sem alterações desde então.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_unsealed_title": {
+    "message": "Sem selo"
+  },
+  "v_unsealed_text": {
+    "message": "Nenhum selo que você possa conferir. Isso é normal na maioria dos áudios e não significa que seja falso."
+  },
+  "v_warning_title": {
+    "message": "Atenção"
+  },
+  "v_warning_text": {
+    "message": "$ARG$ sempre sela, mas esta gravação não tem um selo válido dessa pessoa.",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "v_alert_title": {
+    "message": "Alerta"
+  },
+  "v_alert_text": {
+    "message": "O selo está quebrado ou vem de uma chave diferente da que você fixou. Não confie nesta gravação."
+  },
+  "changedSeconds": {
+    "message": "Alterado: $ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "unknownKeyIntact": {
+    "message": "Selado por uma chave que você não fixou, e sem alterações desde que foi selado. Isso não diz nada sobre quem selou."
+  },
+  "unknownKeyAltered": {
+    "message": "Selado por uma chave que você não fixou, e alterado depois de selado."
+  },
+  "notWav": {
+    "message": "Isto não é um arquivo WAV PCM de 16 bits. Mensagens de voz recomprimidas pelos apps perdem o selo."
+  },
+  "details": {
+    "message": "Detalhes"
+  },
+  "contactsTitle": {
+    "message": "Contatos"
+  },
+  "noContacts": {
+    "message": "Nenhum contato ainda. Peça a cada contato o texto de pareamento."
+  },
+  "pairingLabel": {
+    "message": "Texto de pareamento"
+  },
+  "nameLabel": {
+    "message": "Nome"
+  },
+  "alwaysSeals": {
+    "message": "Sempre sela"
+  },
+  "strict": {
+    "message": "Rigoroso: falta de selo vira alerta"
+  },
+  "addContact": {
+    "message": "Adicionar contato"
+  },
+  "remove": {
+    "message": "Remover"
+  },
+  "invalidPairing": {
+    "message": "Isso não é um texto de pareamento válido."
+  },
+  "circleWarning": {
+    "message": "Um texto de pareamento de círculo contém um segredo compartilhado. Ele fica guardado só neste navegador."
+  },
+  "keyId": {
+    "message": "Chave $ARG$",
+    "placeholders": {
+      "arg": {
+        "content": "$1"
+      }
+    }
+  },
+  "learnMore": {
+    "message": "Como funciona"
+  }
+}

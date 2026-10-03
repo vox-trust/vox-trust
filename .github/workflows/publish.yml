@@ -1,10 +1,11 @@
 name: Publish packages
 
 # Publishes a released version to crates.io (vox-trust-core, vox-trust-carrier,
-# vox-trust-cli) and npm (vox-trust). Run it from the Actions tab after the Release
-# workflow has created the tag. Needs the repository secrets CARGO_REGISTRY_TOKEN and
-# NPM_TOKEN. The npm package carries a provenance statement, and its WebAssembly file
-# must be byte-identical to the one attached to the GitHub Release.
+# vox-trust-cli), npm (vox-trust) and PyPI (vox-trust). Run it from the Actions tab after
+# the Release workflow has created the tag. Needs the repository secrets
+# CARGO_REGISTRY_TOKEN, NPM_TOKEN and PYPI_API_TOKEN. The npm package carries a provenance
+# statement, and its WebAssembly file must be byte-identical to the one attached to the
+# GitHub Release; the PyPI wheels are the ones attached to the release.
 
 on:
   workflow_dispatch:
@@ -15,8 +16,8 @@ on:
       registries:
         description: "Where to publish"
         type: choice
-        options: [both, crates.io, npm]
-        default: both
+        options: [all, crates.io, npm, pypi]
+        default: all
 
 permissions:
   contents: read
@@ -31,7 +32,7 @@ env:
 jobs:
   crates:
     name: crates.io
-    if: inputs.registries != 'npm'
+    if: inputs.registries == 'all' || inputs.registries == 'crates.io'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,7 +63,7 @@ jobs:
 
   npm:
     name: npm
-    if: inputs.registries != 'crates.io'
+    if: inputs.registries == 'all' || inputs.registries == 'npm'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -105,3 +106,35 @@ jobs:
           else
             cd npm && npm publish --provenance --access public
           fi
+
+  pypi:
+    name: PyPI
+    if: inputs.registries == 'all' || inputs.registries == 'pypi'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the wheels attached to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "vox_trust-*.whl" --dir dist
+          ls -la dist
+          version="${TAG#v}"
+          for f in dist/*.whl; do
+            case "$f" in dist/vox_trust-"$version"-*) ;; *) echo "::error::$f is not version $version"; exit 1 ;; esac
+          done
+      - name: Skip if already published
+        id: exists
+        run: |
+          if curl -fsS "https://pypi.org/pypi/vox-trust/${TAG#v}/json" > /dev/null 2>&1; then
+            echo "vox-trust ${TAG#v} is already on PyPI, skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check the token
+        if: steps.exists.outputs.skip != 'true'
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: '[ -n "$PYPI_API_TOKEN" ] || { echo "::error::secret PYPI_API_TOKEN is not set"; exit 1; }'
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        if: steps.exists.outputs.skip != 'true'
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: dist/
