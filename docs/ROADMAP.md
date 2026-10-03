@@ -103,7 +103,8 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 
 ## Phase 4: plugins and integrations
 
-- ⬜ **Browser extension:** seal the outgoing microphone stream before the encoder, verify the decoded remote audio. Known constraints: Manifest V3 content-security rules for WebAssembly, audio work in an offscreen document, no `SharedArrayBuffer` in content scripts, and insertable streams only expose *encoded* frames. It needs the carrier.
+- ✅ **Browser extension, file verifier** (v0.6.0): verifies sealed WAV files and links offline in Chrome, Edge, Firefox and Safari, with contacts from pairing text. It does not touch live audio.
+- ⬜ **Browser extension, live calls:** seal the outgoing microphone stream before the encoder, verify the decoded remote audio. Known constraints: Manifest V3 content-security rules for WebAssembly, audio work in an offscreen document, no `SharedArrayBuffer` in content scripts, and insertable streams only expose *encoded* frames. It needs the carrier.
 - ⬜ **Desktop verifier:** local only, no network, visible "listening" indicator. Capture paths: WASAPI loopback (Windows), PipeWire/PulseAudio monitor sources (Linux), process taps or ScreenCaptureKit (macOS).
 - ⬜ **Share-sheet flow** for voice notes on mobile (manual: seal, send, verify). File mode already works for this if the messenger keeps the file bit-exact (most re-encode voice notes).
 - ✅ **Tamper localisation** shown per chunk (file mode, in the demo and the CLI)
