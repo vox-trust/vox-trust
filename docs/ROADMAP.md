@@ -9,7 +9,7 @@ Legend: ✅ done · 🟡 partly done · ⬜ not started
 **Usable today, for one thing:** sealing a WAV file and verifying it, with the altered chunks shown, in the browser demo, the browser extension, the command line or your own app (JavaScript, Rust, Python, Android, iOS, an MCP server; [integration guide](INTEGRATION.md)). It is a **pre-1.0 (specification 0.2), not audited, and not ready to protect anyone.** Two big gaps remain, and they are the gaps that matter most:
 
 - 🟡 **The audio watermark carrier.** An experimental carrier (stdm-1, now stdm-2) is built and measured against real codecs: it survives MP3, AAC, G.722, Opus at 24 kbit/s and above and small speed changes, but not phone-call codecs (AMR-WB), noise, noise reduction or echo, so it **did not pass the Phase 0 gate**. And because in-band seals are not bound to the audio, anyone can copy a seal into other audio (the copy attack). Until that is solved, only file mode gives verdicts. [Results](../bench/results/2026-10-01-stdm-1/README.md) · [decision](decisions/0001-carrier-phase-0.md)
-- ⬜ **Independent review, an independent implementation, and everything that depends on other people.** Only the author has looked at this code and design (plus automated adversarial reviews, which are not a substitute).
+- ⬜ **Independent review, an independent implementation, and everything that depends on other people.** Only the author has looked at this code and design.
 
 What is done:
 
