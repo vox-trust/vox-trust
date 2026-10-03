@@ -3,7 +3,7 @@ name: Publish packages
 # Publishes a released version to crates.io (vox-trust-core, vox-trust-carrier,
 # vox-trust-cli), npm (vox-trust) and PyPI (vox-trust). Run it from the Actions tab after
 # the Release workflow has created the tag. Needs the repository secrets
-# CARGO_REGISTRY_TOKEN, NPM_TOKEN and PYPI_API_TOKEN. The npm package carries a provenance
+# CARGO_REGISTRY_TOKEN and PYPI_API_TOKEN; npm uses trusted publishing (OIDC), or NPM_TOKEN. The npm package carries a provenance
 # statement, and its WebAssembly file must be byte-identical to the one attached to the
 # GitHub Release; the PyPI wheels are the ones attached to the release.
 
@@ -80,6 +80,8 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+      - name: npm with trusted publishing (OIDC) support
+        run: npm install -g npm@11
       - name: Build the WebAssembly core and assemble the package
         run: |
           scripts/build-web.sh
@@ -99,7 +101,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          [ -n "$NODE_AUTH_TOKEN" ] || { echo "::error::secret NPM_TOKEN is not set"; exit 1; }
+          # Without NPM_TOKEN, npm authenticates through trusted publishing (OIDC).
           version="${TAG#v}"
           if npm view "vox-trust@$version" version > /dev/null 2>&1; then
             echo "vox-trust $version is already on npm, skipping"
