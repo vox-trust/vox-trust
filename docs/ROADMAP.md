@@ -94,7 +94,7 @@ Deliverables: a reproducible benchmark harness in this repository, published res
 - 🟡 A release with a working demo, the open threat model and published benchmark results: **v0.3.0** (the carrier did not pass its gate); **v0.4.0** adds protected keys, the versioning rules and mutation-tested core code; **v0.5.0** the stdm-2 carrier, a benchmark against published neural watermarks and a comparison with other approaches. **v0.5.1** packages for developers (npm, crates.io) and an integration guide. **v0.6.0** bindings for Android, iOS and Python, a browser extension, an MCP server, and WavMark measured with a full seal. A 1.0 waits for an outside review.
 - ⬜ A "break the seal" challenge with published rules, a scoreboard and published fixes
 - 🟡 Documentation: README, spec and CLI help exist; full install matrix and benchmark section do not
-- ⬜ Private vulnerability reporting enabled in the repository settings and tested end to end (SECURITY.md already points to it, with a fallback)
+- ✅ Private vulnerability reporting enabled in the repository settings (SECURITY.md points to it, with a fallback)
 - ✅ Fuzzing of every parser of untrusted input: six cargo-fuzz targets (including the carrier's detector) that check invariants, not only crashes. Locally they ran about 170 million inputs with no failure; CI runs them on every push and for 15 minutes each weekly. Fuzzing finds bugs, it does not prove their absence.
 - ✅ Every GitHub Action pinned by commit hash
 - ✅ Release workflow: binaries for Linux, macOS and Windows, the WebAssembly module and the demo, with `SHA256SUMS` and build-provenance attestations. Tags are created by GitHub, not GPG-signed; the attestations are the integrity check.
