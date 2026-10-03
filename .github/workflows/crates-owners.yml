@@ -1,0 +1,33 @@
+name: crates.io owners
+
+# Adds a GitHub team as co-owner of the published crates. Needs a crates.io token with the
+# change-owners scope (secret CARGO_OWNER_TOKEN, or CARGO_REGISTRY_TOKEN if it has it).
+# A team owner can publish new versions but cannot add or remove owners.
+
+on:
+  workflow_dispatch:
+    inputs:
+      team:
+        description: "Team to add, as github:org:team"
+        default: "github:vox-trust:maintainers"
+
+permissions:
+  contents: read
+
+jobs:
+  owners:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Add the team
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_OWNER_TOKEN || secrets.CARGO_REGISTRY_TOKEN }}
+          TEAM: ${{ inputs.team }}
+        run: |
+          for crate in vox-trust-core vox-trust-carrier vox-trust-cli; do
+            cargo owner --add "$TEAM" "$crate"
+            cargo owner --list "$crate"
+          done
