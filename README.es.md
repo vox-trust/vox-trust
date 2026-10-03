@@ -20,6 +20,7 @@ Un protocolo abierto, con una implementación de referencia en Rust, que sella u
   <img alt="Version 0.6.0" src="https://img.shields.io/badge/version-0.6.0-informational">
   <a href="https://crates.io/crates/vox-trust-core"><img alt="crates.io" src="https://img.shields.io/crates/v/vox-trust-core"></a>
   <a href="https://www.npmjs.com/package/vox-trust"><img alt="npm" src="https://img.shields.io/npm/v/vox-trust"></a>
+  <a href="https://pypi.org/project/vox-trust/"><img alt="PyPI" src="https://img.shields.io/pypi/v/vox-trust"></a>
   <img alt="Not audited" src="https://img.shields.io/badge/security-not%20audited-red">
 </p>
 
