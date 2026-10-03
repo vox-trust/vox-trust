@@ -40,7 +40,7 @@ The image sets `VOX_TRUST_REMOTE=1`: local paths and plain http are refused, URL
 resolve to private or link-local addresses are refused (checked on every connection,
 redirects included), downloads stop at 64 MiB and 20 s. Nothing is stored; the server keeps
 no state between calls. Run it behind any stdio-to-HTTP bridge, or let a directory such as
-Glama host it.
+Glama host it. It is listed there: <https://glama.ai/mcp/servers/vox-trust/vox-trust>.
 
 ## Develop
 
