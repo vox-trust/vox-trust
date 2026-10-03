@@ -1,0 +1,39 @@
+name: MCP server
+
+on:
+  push:
+    branches: [main]
+    paths: ["mcp/**", "web/vox-trust.js", "crates/vox-trust-core/**", "crates/vox-trust-wasm/**", "glama.json", ".dockerignore", ".github/workflows/mcp.yml"]
+  pull_request:
+    paths: ["mcp/**", "web/vox-trust.js", "crates/vox-trust-core/**", "crates/vox-trust-wasm/**", "glama.json", ".dockerignore", ".github/workflows/mcp.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests and Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Build and test the server
+        run: |
+          scripts/build-web.sh
+          scripts/build-mcp.sh
+          node --test mcp/test/server.test.mjs
+      - name: Build the Docker image
+        run: docker build -f mcp/Dockerfile -t vox-trust-mcp .
+      - name: The image's WebAssembly is the same as the reproducible build
+        run: |
+          docker run --rm --entrypoint sha256sum vox-trust-mcp /app/core/vox_trust.wasm | tee image.sha
+          sha256sum web/vox_trust.wasm | tee web.sha
+          [ "$(cut -d' ' -f1 image.sha)" = "$(cut -d' ' -f1 web.sha)" ]
+      - name: Talk MCP to the image
+        run: node mcp/test/docker-smoke.mjs vox-trust-mcp

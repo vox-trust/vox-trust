@@ -115,6 +115,7 @@ Vox Trust بروتوكول مفتوح صُمّم ليعمل داخل التطب�
 npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
 cargo add vox-trust-core     # Rust, no unsafe, no I/O
 pip install vox-trust        # Python 3.9+
+npx -y vox-trust-mcp         # MCP server: AI assistants verify recordings
 ```
 
 ```js
@@ -197,6 +198,7 @@ crates/
   vox-trust-cli/    أداة سطر الأوامر `vox-trust`
 web/         العرض التجريبي في المتصفح (منشور على vox-trust.github.io/demo/)
 bindings/    روابط Kotlin (Android) وSwift (iOS وmacOS) وPython (UniFFI)
+mcp/         خادم MCP ليتحقق مساعدو الذكاء الاصطناعي من التسجيلات
 npm/         حزمة npm `vox-trust` (WebAssembly + غلاف JavaScript + الأنواع)
 extension/   إضافة متصفح لـ Chrome وEdge وFirefox وSafari
 examples/    أمثلة الدمج: Node والمتصفح وRust

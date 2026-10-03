@@ -106,6 +106,20 @@ jobs:
           else
             cd npm && npm publish --provenance --access public
           fi
+      - name: Publish the MCP server (vox-trust-mcp)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version="${TAG#v}"
+          [ "$version" = "$(node -p 'require("./mcp/package.json").version')" ] \
+            || { echo "::error::mcp/package.json is not version $version"; exit 1; }
+          if npm view "vox-trust-mcp@$version" version > /dev/null 2>&1; then
+            echo "vox-trust-mcp $version is already on npm, skipping"
+          else
+            scripts/build-mcp.sh
+            node --test mcp/test/server.test.mjs
+            cd mcp && npm publish --provenance --access public
+          fi
 
   pypi:
     name: PyPI

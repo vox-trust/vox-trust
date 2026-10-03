@@ -93,6 +93,7 @@ Vox Trust is an open protocol meant to live inside the apps people already use: 
 npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
 cargo add vox-trust-core     # Rust, no unsafe, no I/O
 pip install vox-trust        # Python 3.9+
+npx -y vox-trust-mcp         # MCP server: AI assistants verify recordings
 ```
 
 ```js
@@ -189,6 +190,7 @@ crates/
   vox-trust-bench/  `vt-bench`, the carrier benchmark
 web/         the browser demo (published at vox-trust.github.io/demo/)
 bindings/    Kotlin (Android), Swift (iOS, macOS) and Python bindings (UniFFI)
+mcp/         MCP server so AI assistants can verify recordings
 npm/         the `vox-trust` npm package (WebAssembly + JavaScript wrapper + types)
 extension/   browser extension for Chrome, Edge, Firefox and Safari
 examples/    integration examples: Node, browser, Rust

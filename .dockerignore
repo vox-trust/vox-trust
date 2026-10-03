@@ -1,0 +1,9 @@
+target
+**/node_modules
+bindings/target
+extension/dist
+npm/*.tgz
+bench/corpus
+bench/results/runs
+mutants-out
+.git

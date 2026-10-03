@@ -132,6 +132,16 @@ Keep the seed in the Android Keystore or the iOS Keychain. The bindings are gene
 UniFFI from one Rust crate ([bindings/](../bindings/)); Maven Central and Swift Package
 Manager distribution are not set up yet.
 
+## AI assistants (MCP)
+
+`vox-trust-mcp` is a Model Context Protocol server, so ChatGPT, Cursor, VS Code or any MCP
+client can call `verify_audio` and get the verdict and the changed seconds. Verify-only; see
+[mcp/](../mcp/).
+
+```json
+{ "mcpServers": { "vox-trust": { "command": "npx", "args": ["-y", "vox-trust-mcp"] } } }
+```
+
 ## Command line and servers
 
 ```sh

@@ -20,3 +20,6 @@ __pycache__/
 /bindings/kotlin/.gradle
 /bindings/kotlin/.kotlin
 /extension/dist
+/mcp/core
+/mcp/node_modules
+/mcp/LICENSE

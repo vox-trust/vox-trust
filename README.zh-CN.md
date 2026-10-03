@@ -95,6 +95,7 @@ Vox Trust 是一个开放协议，设计为嵌入人们已在使用的应用：�
 npm install vox-trust        # browsers and Node 20+, WebAssembly, no dependencies, types included
 cargo add vox-trust-core     # Rust, no unsafe, no I/O
 pip install vox-trust        # Python 3.9+
+npx -y vox-trust-mcp         # MCP server: AI assistants verify recordings
 ```
 
 ```js
@@ -173,6 +174,7 @@ crates/
   vox-trust-cli/    命令行工具 `vox-trust`
 web/         浏览器演示（发布于 vox-trust.github.io/demo/）
 bindings/    Kotlin（Android）、Swift（iOS、macOS）与 Python 绑定（UniFFI）
+mcp/         MCP 服务器，供 AI 助手验证录音
 npm/         npm 包 `vox-trust`（WebAssembly + JavaScript 封装 + 类型）
 extension/   适用于 Chrome、Edge、Firefox 和 Safari 的浏览器扩展
 examples/    集成示例：Node、浏览器、Rust
