@@ -1,0 +1,11 @@
+[bindings.python]
+# maturin ships the library under this name.
+cdylib_name = "uniffi_vox_trust_ffi"
+
+[bindings.kotlin]
+package_name = "io.github.voxtrust"
+cdylib_name = "vox_trust_ffi"
+
+[bindings.swift]
+module_name = "VoxTrust"
+ffi_module_name = "VoxTrustFFI"

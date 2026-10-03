@@ -1,0 +1,32 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "vox-trust"
+version = "0.5.1"
+description = "Seal real voices, verify them anywhere: sealed WAV files (HMAC-SHA-256 or Ed25519) with tamper localization. Pre-1.0, not audited."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+authors = [{ name = "Roger Oliveira" }]
+keywords = ["voice", "audio", "authenticity", "provenance", "deepfake", "voice-cloning", "ed25519", "wav"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Rust",
+  "Topic :: Multimedia :: Sound/Audio",
+  "Topic :: Security :: Cryptography",
+]
+
+[project.urls]
+Homepage = "https://vox-trust.github.io/"
+Repository = "https://github.com/vox-trust/vox-trust"
+Documentation = "https://github.com/vox-trust/vox-trust/blob/main/docs/INTEGRATION.md"
+Issues = "https://github.com/vox-trust/vox-trust/issues"
+
+[tool.maturin]
+bindings = "uniffi"
+manifest-path = "../vox-trust-ffi/Cargo.toml"
+module-name = "vox_trust"

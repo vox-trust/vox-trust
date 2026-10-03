@@ -14,3 +14,8 @@ __pycache__/
 /npm/LICENSE
 /npm/NOTICE
 /npm/*.tgz
+/bindings/target
+/bindings/kotlin/generated
+/bindings/kotlin/build
+/bindings/kotlin/.gradle
+/bindings/kotlin/.kotlin

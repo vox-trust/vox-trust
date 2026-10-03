@@ -1,0 +1,21 @@
+# Bindings for Kotlin (Android), Swift (iOS, macOS) and Python, generated with UniFFI.
+# A separate workspace, so the core and its supply-chain policy stay free of the generator's
+# dependencies.
+[workspace]
+resolver = "2"
+members = ["vox-trust-ffi"]
+
+[workspace.package]
+version = "0.5.1"
+edition = "2021"
+rust-version = "1.94"
+license = "Apache-2.0"
+repository = "https://github.com/vox-trust/vox-trust"
+homepage = "https://vox-trust.github.io/"
+authors = ["Roger Oliveira"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = "debuginfo"

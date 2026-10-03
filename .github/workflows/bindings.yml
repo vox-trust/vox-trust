@@ -1,0 +1,107 @@
+name: Bindings
+
+# Kotlin (Android), Swift (iOS, macOS) and Python bindings, generated with UniFFI from
+# bindings/vox-trust-ffi. Each language runs the same round trip: seal, verify, tamper,
+# verdicts and error handling.
+
+on:
+  push:
+    branches: [main]
+    paths: ["bindings/**", "crates/vox-trust-core/**", ".github/workflows/bindings.yml"]
+  pull_request:
+    paths: ["bindings/**", "crates/vox-trust-core/**", ".github/workflows/bindings.yml"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: bindings
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - run: cargo fmt --all --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+
+  python:
+    name: Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build the wheel and run the tests
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install "maturin>=1.9,<2" pytest
+          (cd python && ../.venv/bin/maturin build --release -o ../target/wheels)
+          .venv/bin/pip install target/wheels/vox_trust-*.whl
+          .venv/bin/python -m pytest -q python/tests
+
+  kotlin:
+    name: Kotlin (JVM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Build the library and generate the bindings
+        run: |
+          cargo build --locked --release -p vox-trust-ffi
+          cargo run --locked --release --bin uniffi-bindgen -- generate --no-format \
+            --library target/release/libvox_trust_ffi.so --language kotlin --out-dir kotlin/generated
+      - name: Test
+        working-directory: bindings/kotlin
+        run: gradle test --no-daemon
+
+  swift:
+    name: Swift (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - run: swift/test.sh
+
+  android:
+    name: Android libraries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Build
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          cargo install --locked cargo-ndk
+          scripts/build-android.sh ci
+          unzip -l ../dist/vox-trust-android-ci.zip
+
+  apple:
+    name: iOS and macOS framework
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+      - name: Build
+        run: |
+          scripts/build-apple.sh ci
+          unzip -l ../dist/vox-trust-apple-ci.zip | tail -n 15
