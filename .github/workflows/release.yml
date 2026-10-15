@@ -75,7 +75,7 @@ jobs:
           else
             tar -czf "../dist/$name.tar.gz" "$name"
           fi
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cli-${{ matrix.name }}
           path: dist/*
@@ -98,7 +98,7 @@ jobs:
           mkdir -p dist
           cp web/vox_trust.wasm "dist/vox_trust-${TAG}.wasm"
           tar -czf "dist/vox-trust-demo-${TAG}.tar.gz" -C web index.html demo.css demo.js vox-trust.js vox_trust.wasm i18n
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: wasm
           path: dist/*
@@ -124,7 +124,7 @@ jobs:
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux || 'auto' }}
           args: --release --locked --out ../../dist
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: python-${{ matrix.name }}
           path: dist/*
@@ -144,7 +144,7 @@ jobs:
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           cargo install --locked cargo-ndk
           bindings/scripts/build-android.sh "$TAG"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: android
           path: dist/*
@@ -161,7 +161,7 @@ jobs:
           toolchain: stable
       - name: Build
         run: bindings/scripts/build-apple.sh "$TAG"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: apple
           path: dist/*
@@ -182,7 +182,7 @@ jobs:
           scripts/build-web.sh
           node extension/build.mjs
           mkdir -p dist && cp extension/dist/*.zip dist/
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: extension
           path: dist/*
